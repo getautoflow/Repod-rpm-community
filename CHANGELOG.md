@@ -5,6 +5,20 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) · Versioning: 
 
 ---
 
+## [1.0.5] — 2026-05-24
+
+### Fixed
+- **Upload — grands paquets (> ~50 Mo)** — Le workflow de validation n'était pas visible pendant l'upload de gros fichiers (ex : `grafana-9.2.10-17.el8_10.src` à 321 Mo). Cause : `fetch()` ne fournit pas d'événements de progression pendant l'envoi du corps multipart ; nginx bufférisait l'intégralité du corps avant de forwarder au backend, rendant l'interface gelée sans feedback pendant plusieurs minutes. **Fix** : upload en deux phases séparées — phase 1 via `XMLHttpRequest` (barre de progression temps réel avec `upload.onprogress`) vers le nouveau `POST /upload/stage`, phase 2 pipeline SSE via `POST /upload/pipeline/{staging_id}` (corps JSON minuscule → pas de bufferisation). Le workflow SSE s'affiche immédiatement au début de la validation.
+
+---
+
+## [1.0.4] — 2026-05-24
+
+### Changed
+- **Import — Sources RPM** — L'icône cadenas (🔒) sur les sources de sécurité (AlmaLinux BaseOS/AppStream, Rocky Linux, Oracle Linux, Fedora Updates, openSUSE Updates…) est remplacée par une icône bouclier pour indiquer clairement qu'il s'agit de sources contenant des avis de sécurité (CVE/ALSA/RLSA), et non de sources désactivées. Un bandeau d'information confirme que toutes les sources sont actives et synchronisables sans passer par les Paramètres.
+
+---
+
 ## [1.0.3] — 2026-05-24
 
 ### Added

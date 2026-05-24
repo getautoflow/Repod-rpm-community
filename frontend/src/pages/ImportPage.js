@@ -374,7 +374,7 @@ function SearchImportTab() {
                       <span className="text-sm font-medium text-gray-900 truncate">{pkg.name}</span>
                       <div className="flex items-center gap-1.5 shrink-0">
                         {pkg.security ? (
-                          <Badge color="red"><svg className="w-3 h-3 inline mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> Sécurité</Badge>
+                          <Badge color="red"><svg className="w-3 h-3 inline mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Sécurité</Badge>
                         ) : null}
                         <Badge color="gray">{pkg.version}</Badge>
                       </div>
@@ -396,7 +396,7 @@ function SearchImportTab() {
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="font-semibold text-gray-900">{selected.name}</h3>
-                    {selected.security ? <Badge color="red"><svg className="w-3 h-3 inline mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> Patch sécurité</Badge> : null}
+                    {selected.security ? <Badge color="red"><svg className="w-3 h-3 inline mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Patch sécurité</Badge> : null}
                   </div>
                   <p className="text-sm text-gray-500">{selected.version} · {selected.arch}</p>
                 </div>
@@ -624,6 +624,19 @@ function SyncTab() {
 
   return (
     <div className="space-y-6 p-6">
+      {/* Bandeau d'information */}
+      <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-sm text-blue-800">
+        <svg className="w-4 h-4 mt-0.5 shrink-0 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <span>
+          <strong>Toutes les sources sont actives.</strong> L'icône{" "}
+          <svg className="w-3 h-3 inline text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>{" "}
+          indique que la source contient des avis de sécurité (CVE/ALSA/RLSA) — elle n'est pas verrouillée.
+          Cliquez sur <strong>Synchroniser tout</strong> pour indexer les paquets.
+        </span>
+      </div>
+
       {/* Résumé */}
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-white border border-gray-200 rounded-lg p-4">
@@ -685,8 +698,8 @@ function SyncTab() {
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-2">
                       {s.security && (
-                        <span title="Source de sécurité (CVE/patches critiques)">
-                          <svg className="w-3 h-3 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                        <span title="Cette source contient des avis de sécurité (CVE/ALSA/RLSA). La source est active et synchronisable.">
+                          <svg className="w-3 h-3 inline text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                         </span>
                       )}
                       <div>

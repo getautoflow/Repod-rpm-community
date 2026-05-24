@@ -14,9 +14,11 @@ import json
 import os
 import shutil
 import subprocess
+import uuid
 from pathlib import Path
 from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 
 from auth.dependencies import get_uploader_user
 from limiter import limiter
@@ -407,7 +409,7 @@ async def upload_package_stream(
     distribution: str = Form("almalinux8"),
     current_user: str = Depends(get_uploader_user),
 ):
-    """Upload avec workflow SSE en temps réel."""
+    """Upload avec workflow SSE en temps réel (mono-phase, petits fichiers < ~50 Mo)."""
     if distribution not in VALID_CODENAMES:
         raise HTTPException(status_code=400,
                             detail=f"Distribution invalide : {', '.join(sorted(VALID_CODENAMES))}")
@@ -424,6 +426,103 @@ async def upload_package_stream(
 
     return StreamingResponse(
         _upload_stream_generator(safe_filename, staging_path, distribution, current_user),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+# ─── Upload deux phases (grands fichiers) ────────────────────────────────────
+#
+# Phase 1 : POST /upload/stage   — XHR avec progress bar côté frontend
+#   Reçoit le fichier, le sauvegarde dans staging, retourne un staging_id.
+#
+# Phase 2 : POST /upload/pipeline/{staging_id} — SSE workflow
+#   Lance le pipeline de validation sur le fichier déjà stagé.
+#   Le frontend peut afficher la progression en temps réel dès le début.
+#
+# Avantage : fetch() ne supporte pas upload.onprogress ; XHR oui.
+# Pour les gros paquets (> ~50 Mo) le navigateur peut mettre plusieurs minutes
+# à envoyer le corps multipart. Sans séparation, le SSE ne démarre qu'après
+# réception complète → l'utilisateur voit une interface gelée sans feedback.
+# ─────────────────────────────────────────────────────────────────────────────
+
+@router.post("/stage")
+@limiter.limit("20/minute")
+async def stage_upload(
+    request: Request,
+    file: UploadFile = File(...),
+    current_user: str = Depends(get_uploader_user),
+):
+    """
+    Phase 1 — Réception du fichier .rpm dans le staging.
+
+    Le frontend envoie le fichier via XHR (supporte upload.onprogress).
+    Retourne un staging_id à passer à POST /upload/pipeline/{staging_id}.
+    Le fichier est nommé {staging_id}_{safe_filename} pour permettre plusieurs
+    uploads simultanés du même fichier sans collision.
+    """
+    filename = file.filename or "unknown.rpm"
+    if not filename.endswith(".rpm"):
+        raise HTTPException(status_code=400, detail="Seuls les fichiers .rpm sont acceptés")
+
+    safe_filename = Path(filename).name
+    sid          = str(uuid.uuid4())
+    staging_path = STAGING_INCOMING / f"{sid}_{safe_filename}"
+
+    try:
+        with open(staging_path, "wb") as buf:
+            shutil.copyfileobj(file.file, buf)
+    except Exception as e:
+        audit_log("UPLOAD_STAGE", current_user, "FAILURE", package=safe_filename,
+                  detail=f"Erreur écriture staging: {e}")
+        raise HTTPException(status_code=500, detail=f"Erreur écriture staging: {e}")
+
+    audit_log("UPLOAD_STAGE", current_user, "SUCCESS", package=safe_filename,
+              detail=f"Stagé sous {staging_path.name} ({staging_path.stat().st_size} octets)")
+
+    return {
+        "staging_id": sid,
+        "filename":   safe_filename,
+        "size":       staging_path.stat().st_size,
+    }
+
+
+class PipelineRequest(BaseModel):
+    distribution: str = "almalinux8"
+
+
+@router.post("/pipeline/{staging_id}")
+async def pipeline_sse(
+    staging_id: str,
+    body: PipelineRequest = PipelineRequest(),
+    current_user: str = Depends(get_uploader_user),
+):
+    """
+    Phase 2 — Pipeline de validation SSE pour un fichier déjà stagé.
+
+    Retrouve le fichier par son staging_id (glob STAGING_INCOMING/{staging_id}_*.rpm),
+    lance _upload_stream_generator et retourne une StreamingResponse SSE.
+    Le fichier stagé est géré (déplacé vers pool/ ou quarantine/) par le générateur.
+    """
+    if body.distribution not in VALID_CODENAMES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Distribution invalide : {', '.join(sorted(VALID_CODENAMES))}",
+        )
+
+    matches = list(STAGING_INCOMING.glob(f"{staging_id}_*.rpm"))
+    if not matches:
+        raise HTTPException(
+            status_code=404,
+            detail="staging_id introuvable — le fichier a peut-être expiré ou déjà été traité",
+        )
+
+    staging_path = matches[0]
+    # Le nom réel du fichier = tout ce qui suit "staging_id_"
+    safe_filename = staging_path.name[len(staging_id) + 1:]
+
+    return StreamingResponse(
+        _upload_stream_generator(safe_filename, staging_path, body.distribution, current_user),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
