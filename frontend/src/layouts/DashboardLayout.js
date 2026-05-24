@@ -158,6 +158,16 @@ const Icon = {
       <path d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
     </svg>
   ),
+  Lock: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
+    </svg>
+  ),
+  ArrowUpRight: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
+      <line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/>
+    </svg>
+  ),
 };
 
 // ─── Menu Help ────────────────────────────────────────────────────────────────
@@ -211,7 +221,7 @@ function HelpMenu() {
           {/* En-tête */}
           <div className="px-4 py-3 bg-slate-50 border-b border-slate-200">
             <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Centre d'aide</p>
-            <p className="text-[11px] text-slate-400 mt-0.5">Repod — Enterprise Edition</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">Repod — Community Edition</p>
           </div>
 
           {/* Sections */}
@@ -245,10 +255,21 @@ function HelpMenu() {
             </div>
           ))}
 
-          {/* Footer version */}
-          <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-100">
-            <p className="text-[10px] text-slate-400 text-center">
-              Repod Enterprise — <span className="font-mono">v1.0.1</span>
+          {/* CTA Upgrade — spécifique Community */}
+          <div className="p-3 border-t border-slate-100 bg-gradient-to-br from-indigo-50 to-violet-50">
+            <a
+              href="https://repod.getautoflow.dev/#demo"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2 w-full px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition-colors"
+            >
+              <span className="w-3.5 h-3.5 shrink-0"><Icon.ArrowUpRight /></span>
+              <span className="flex-1">Passer à Enterprise</span>
+              <span className="text-indigo-300 text-[10px] font-normal">CVE · SBOM · LDAP</span>
+            </a>
+            <p className="text-[10px] text-slate-400 text-center mt-2">
+              Repod Community — <span className="font-mono">v1.0.1</span>
             </p>
           </div>
         </div>
@@ -276,7 +297,7 @@ const PAGE_TITLES = {
 };
 
 // ─── Item de navigation ───────────────────────────────────────────────────────
-function NavItem({ to, end, icon, label, badge }) {
+function NavItem({ to, end, icon, label, badge, enterprise = false }) {
   return (
     <NavLink
       to={to}
@@ -285,6 +306,8 @@ function NavItem({ to, end, icon, label, badge }) {
         `group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
           isActive
             ? "bg-navy-700 text-white shadow-sm"
+            : enterprise
+            ? "text-slate-500 hover:bg-navy-800 hover:text-slate-300"
             : "text-slate-400 hover:bg-navy-800 hover:text-slate-200"
         }`
       }
@@ -295,11 +318,16 @@ function NavItem({ to, end, icon, label, badge }) {
           {isActive && (
             <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-brand rounded-full" />
           )}
-          <span className={`w-4 h-4 shrink-0 ${isActive ? "text-brand-light" : "text-slate-500 group-hover:text-slate-300"} transition-colors`}>
+          <span className={`w-4 h-4 shrink-0 ${isActive ? "text-brand-light" : enterprise ? "text-slate-600 group-hover:text-slate-400" : "text-slate-500 group-hover:text-slate-300"} transition-colors`}>
             {icon}
           </span>
           <span className="flex-1 leading-none">{label}</span>
-          {badge > 0 && (
+          {enterprise && (
+            <span className="ml-auto w-3.5 h-3.5 text-slate-600 opacity-70 shrink-0">
+              <Icon.Lock />
+            </span>
+          )}
+          {!enterprise && badge > 0 && (
             <span className="ml-auto flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold">
               {badge > 99 ? "99+" : badge}
             </span>
@@ -593,11 +621,13 @@ export default function DashboardLayout() {
           <img src="/logo.png" alt="Repod" className="w-9 h-9 object-contain shrink-0" />
           <div className="min-w-0">
             <p className="text-white font-black text-base tracking-wider uppercase leading-none">Repod</p>
-            <p className="text-navy-500 text-[10px] mt-0.5 font-medium">RPM Repository</p>
+            <span className="inline-block mt-0.5 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-navy-700 text-slate-400">
+              Community
+            </span>
           </div>
         </div>
 
-        {/* Navigation */}
+        {/* Navigation — mêmes labels qu'en enterprise, cadenas sur les items verrouillés */}
         <nav className="flex-1 px-2 py-3 overflow-y-auto space-y-px">
           <NavItem to="/" end icon={<Icon.Dashboard />} label="Tableau de bord" />
 
@@ -606,20 +636,35 @@ export default function DashboardLayout() {
           <NavItem to="/upload"        icon={<Icon.Upload />}        label="Upload" />
           <NavItem to="/import"        icon={<Icon.Import />}        label="Importer" />
           <NavItem to="/distributions" icon={<Icon.Distribution />}  label="Distributions" />
-          <NavItem to="/security"      icon={<Icon.Shield />}        label="Sécurité" />
-          <NavItem to="/audit"         icon={<Icon.Audit />}         label="Audit" />
+
+          <NavSection label="Sécurité" />
+          <NavItem to="/security" icon={<Icon.Shield />} label="Sécurité" />
+          <NavItem to="/audit"    icon={<Icon.Audit />}  label="Audit"     enterprise />
 
           <NavSection label="Clients" />
           <NavItem to="/setup" icon={<Icon.Terminal />} label="Config client" />
 
           <NavSection label="Administration" />
-          <NavItem to="/downloads" icon={<Icon.Download />} label="Téléchargements" />
-          <NavItem to="/sbom"      icon={<Icon.Sbom />}     label="SBOM" />
+          <NavItem to="/downloads" icon={<Icon.Download />} label="Téléchargements" enterprise />
+          <NavItem to="/sbom"      icon={<Icon.Sbom />}     label="SBOM"           enterprise />
           <NavItem to="/health"    icon={<Icon.Health />}   label="Supervision" />
           <NavItem to="/users"     icon={<Icon.Users />}    label="Utilisateurs" />
-          <NavItem to="/settings"  icon={<Icon.Settings />} label="Paramètres" />
-          <NavItem to="/sso"       icon={<Icon.Sso />}      label="SSO / OIDC" />
+          <NavItem to="/sso"       icon={<Icon.Sso />}      label="SSO / OIDC"     enterprise />
+          <NavItem to="/settings"  icon={<Icon.Settings />} label="Paramètres"     enterprise />
         </nav>
+
+        {/* Upgrade strip */}
+        <div className="mx-2 mb-2 p-3 rounded-lg bg-navy-800 border border-navy-700">
+          <p className="text-[10px] font-semibold text-slate-400 mb-2">Débloquer les fonctionnalités Enterprise</p>
+          <a
+            href="https://repod.getautoflow.dev/#demo"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-1.5 w-full py-1.5 rounded-md bg-brand text-white text-[11px] font-semibold hover:opacity-90 transition-opacity"
+          >
+            Demander une démo
+          </a>
+        </div>
 
         {/* Footer utilisateur */}
         <div className="px-2 py-3 border-t border-navy-800 space-y-1">
