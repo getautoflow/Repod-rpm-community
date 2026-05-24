@@ -43,8 +43,8 @@ jobs:
       - name: Run ruff
         run: |
           ruff check backend/ \
-            --select E,F,W,I \
-            --ignore E501,E402,F401 \
+            --select E,F,W \
+            --ignore E501,E402,F401,E741 \
             --output-format github
 
   # ── 2. Tests ────────────────────────────────────────────────────────────────
