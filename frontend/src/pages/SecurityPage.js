@@ -311,16 +311,31 @@ export default function SecurityPage() {
               desc: "Vérification de la disponibilité des dépendances RPM dans le dépôt interne. Non bloquant — avertissement uniquement.",
               color: "bg-green-100 text-green-700",
               blocking: false,
+              enterprise: false,
+            },
+            {
+              step: "6",
+              name: "Analyse CVE — Grype",
+              desc: "Grype scanne le paquet contre les bases CVE/CVSS/NVD et GHSA. Les résultats (score, sévérité, correctif disponible) et la file de révision CISO sont disponibles dans la version Enterprise.",
+              color: "bg-gray-100 text-gray-400",
+              blocking: false,
+              enterprise: true,
             },
           ].map((item) => (
-            <div key={item.step} className="flex items-start gap-4">
+            <div key={item.step} className={`flex items-start gap-4 ${item.enterprise ? "opacity-60" : ""}`}>
               <span className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${item.color}`}>
-                {item.step}
+                {item.enterprise ? (
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
+                  </svg>
+                ) : item.step}
               </span>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold text-gray-800">{item.name}</p>
-                  {item.blocking ? (
+                  <p className={`text-sm font-semibold ${item.enterprise ? "text-gray-400" : "text-gray-800"}`}>{item.name}</p>
+                  {item.enterprise ? (
+                    <span className="text-xs px-1.5 py-0.5 bg-amber-50 text-amber-600 rounded font-medium border border-amber-200">Enterprise</span>
+                  ) : item.blocking ? (
                     <span className="text-xs px-1.5 py-0.5 bg-red-50 text-red-600 rounded font-medium">Bloquant</span>
                   ) : (
                     <span className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded font-medium">Avertissement</span>
