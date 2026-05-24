@@ -667,16 +667,6 @@ export default function DashboardLayout() {
               <p className="text-navy-500 text-[10px]">{user?.role || "admin"}</p>
             </div>
           </div>
-          {/* Bouton Mon compte */}
-          <button
-            onClick={() => setShowMonCompte(true)}
-            className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs font-medium text-slate-500 hover:bg-navy-800 hover:text-slate-300 transition-colors"
-          >
-            <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-            </svg>
-            Mon compte
-          </button>
           <button
             onClick={handleLogout}
             className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs font-medium text-slate-500 hover:bg-red-900/30 hover:text-red-400 transition-colors"

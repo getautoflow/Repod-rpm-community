@@ -374,7 +374,7 @@ function SearchImportTab() {
                       <span className="text-sm font-medium text-gray-900 truncate">{pkg.name}</span>
                       <div className="flex items-center gap-1.5 shrink-0">
                         {pkg.security ? (
-                          <Badge color="red"><svg className="w-3 h-3 inline mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Sécurité</Badge>
+                          <Badge color="red"><svg className="w-3 h-3 inline mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> Sécurité</Badge>
                         ) : null}
                         <Badge color="gray">{pkg.version}</Badge>
                       </div>
@@ -396,7 +396,7 @@ function SearchImportTab() {
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="font-semibold text-gray-900">{selected.name}</h3>
-                    {selected.security ? <Badge color="red"><svg className="w-3 h-3 inline mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Patch sécurité</Badge> : null}
+                    {selected.security ? <Badge color="red"><svg className="w-3 h-3 inline mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> Patch sécurité</Badge> : null}
                   </div>
                   <p className="text-sm text-gray-500">{selected.version} · {selected.arch}</p>
                 </div>
@@ -631,8 +631,8 @@ function SyncTab() {
         </svg>
         <span>
           <strong>Toutes les sources sont actives.</strong> L'icône{" "}
-          <svg className="w-3 h-3 inline text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>{" "}
-          indique que la source contient des avis de sécurité (CVE/ALSA/RLSA) — elle n'est pas verrouillée.
+          <svg className="w-3 h-3 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>{" "}
+          indique que la source contient des avis de sécurité (CVE/ALSA/RLSA).
           Cliquez sur <strong>Synchroniser tout</strong> pour indexer les paquets.
         </span>
       </div>
@@ -698,8 +698,8 @@ function SyncTab() {
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-2">
                       {s.security && (
-                        <span title="Cette source contient des avis de sécurité (CVE/ALSA/RLSA). La source est active et synchronisable.">
-                          <svg className="w-3 h-3 inline text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        <span title="Source de sécurité (CVE/patches critiques)">
+                          <svg className="w-3 h-3 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
                         </span>
                       )}
                       <div>
