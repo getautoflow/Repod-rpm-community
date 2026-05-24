@@ -5,6 +5,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) · Versioning: 
 
 ---
 
+## [1.0.2] — 2026-05-24
+
+### Changed
+- **Security pipeline** — CVE/Grype scan added as step 6 in the import pipeline UI. Results and CISO review queue remain Enterprise-gated; the step is visible in Community to show the scan is performed.
+
+---
+
 ## [1.0.1] — 2026-05-24
 
 ### Changed
