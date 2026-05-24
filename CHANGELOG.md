@@ -5,6 +5,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) · Versioning: 
 
 ---
 
+## [1.0.1] — 2026-05-24
+
+### Changed
+- **Frontend** — Enterprise features (Audit, SBOM, Download stats, SSO/OIDC, Settings, CVE scanning) are now properly gated behind an `EnterpriseGate` component, matching the APT Community Edition layout
+- **Sidebar** — Community badge, lock icons on enterprise nav items, upgrade strip and "Passer à Enterprise" CTA
+- **Default credentials** — `backend.env.example` now ships a valid bcrypt hash for `Admin1234` so first-deploy works out of the box
+
+---
+
 ## [1.0.0] — 2026-05-24
 
 ### Added
