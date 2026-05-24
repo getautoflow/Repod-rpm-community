@@ -66,7 +66,16 @@ Services:
 - **Backend API** → http://localhost:8100/docs (development mode only)
 - **RPM repo** → http://localhost:8180
 
-### 3. Add a repository to a client
+### 3. First login — default credentials
+
+| Username | Password   |
+|----------|------------|
+| `admin`  | `Admin1234` |
+
+> ⚠️ Change the password immediately after your first login, either from the **web UI** (Profile → Change password) or via the API (`POST /auth/change-password`).  
+> To set a custom password before first start, update `ADMIN_PASSWORD_HASH` in `backend.env` (see above).
+
+### 4. Add a repository to a client
 
 ```bash
 # AlmaLinux 9 example
