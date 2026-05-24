@@ -1,0 +1,87 @@
+services:
+
+  rpm-repo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: repod-rpm-community-repo
+    container_name: repod-rpm-repo
+    ports:
+      - "${BIND_HOST:-0.0.0.0}:${RPM_PORT:-8180}:80"
+    volumes:
+      - ./.gnupg:/root/.gnupg:rw
+      - ./repos/gnupg:/repos/gnupg:rw
+      - ./repos/almalinux8:/usr/share/nginx/html/repos/almalinux8
+      - ./repos/almalinux9:/usr/share/nginx/html/repos/almalinux9
+      - ./repos/rocky8:/usr/share/nginx/html/repos/rocky8
+      - ./repos/rocky9:/usr/share/nginx/html/repos/rocky9
+      - ./repos/centos-stream9:/usr/share/nginx/html/repos/centos-stream9
+      - ./repos/oraclelinux8:/usr/share/nginx/html/repos/oraclelinux8
+      - ./repos/fedora:/usr/share/nginx/html/repos/fedora
+      - ./repos/opensuse-leap-15.6:/usr/share/nginx/html/repos/opensuse-leap-15.6
+      - ./repos/opensuse-tumbleweed:/usr/share/nginx/html/repos/opensuse-tumbleweed
+      - ./nginx/repo.conf:/etc/nginx/conf.d/repo.conf:ro
+      - ./repos/logs:/var/log/nginx
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    container_name: repod-rpm-backend
+    depends_on:
+      - rpm-repo
+    env_file: backend.env
+    environment:
+      ENV: production
+      REPOD_EDITION: community
+      POOL_DIR: /repos/pool
+      MANIFEST_DIR: /repos/manifests
+      STAGING_INCOMING: /repos/staging/incoming
+      STAGING_QUARANTINE: /repos/staging/quarantine
+      AUDIT_DIR: /repos/audit
+      INDEX_PATH: /repos/manifests/index.json
+      INDEX_DIR: /repos/package-index
+      IMPORTS_DIR: /repos/imports
+      CLAMAV_DB_DIR: /var/lib/clamav
+      AUTH_DB_PATH: /repos/auth/users.db
+      SETTINGS_PATH: /repos/settings.json
+      SECURITY_DIR: /repos/security
+      NGINX_LOGS_DIR: /repos/logs
+      GNUPG_HOME: /repos/gnupg
+      REPO_BASE: /repos
+    volumes:
+      - ./repos/pool:/repos/pool
+      - ./repos/manifests:/repos/manifests
+      - ./repos/staging:/repos/staging
+      - ./repos/audit:/repos/audit
+      - ./repos/package-index:/repos/package-index
+      - ./repos/imports:/repos/imports
+      - ./repos/clamav-db:/var/lib/clamav
+      - ./repos/auth:/repos/auth
+      - ./repos/security:/repos/security
+      - ./repos/logs:/repos/logs
+      - ./repos/gnupg:/repos/gnupg:rw
+      - ./repos/almalinux8:/repos/almalinux8:rw
+      - ./repos/almalinux9:/repos/almalinux9:rw
+      - ./repos/rocky8:/repos/rocky8:rw
+      - ./repos/rocky9:/repos/rocky9:rw
+      - ./repos/centos-stream9:/repos/centos-stream9:rw
+      - ./repos/oraclelinux8:/repos/oraclelinux8:rw
+      - ./repos/fedora:/repos/fedora:rw
+      - ./repos/opensuse-leap-15.6:/repos/opensuse-leap-15.6:rw
+      - ./repos/opensuse-tumbleweed:/repos/opensuse-tumbleweed:rw
+    ports:
+      - "${BIND_HOST:-0.0.0.0}:${BACKEND_PORT:-8100}:8000"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        REACT_APP_API_URL: ${REACT_APP_API_URL:-}
+        REACT_APP_REPO_URL: ${REACT_APP_REPO_URL:-http://localhost:8180}
+    container_name: repod-rpm-frontend
+    depends_on:
+      - backend
+    ports:
+      - "${BIND_HOST:-0.0.0.0}:${FRONTEND_PORT:-3103}:80"
+    restart: unless-stopped
