@@ -21,13 +21,14 @@ import os
 import subprocess
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 
 from auth.dependencies import get_admin_user, get_current_user
 from edition import require_enterprise
 from services.audit import log as audit_log
 from services.health_checks import get_clamav_status
+from services.manifest import load_manifest, list_manifests
 
 router = APIRouter(prefix="/security", tags=["Security"])
 
@@ -136,8 +137,78 @@ def get_packages_posture(_: None = Depends(require_enterprise)):
 
 
 @router.get("/packages/{name}/{version}/cve")
-def get_package_cve(name: str, version: str, _: None = Depends(require_enterprise)):
-    """Package CVE details — Enterprise Edition only."""
+def get_package_cve(
+    name: str,
+    version: str,
+    arch: str = Query("x86_64"),
+    current_user: str = Depends(get_current_user),
+):
+    """
+    Résultats CVE depuis le manifest (scan Grype effectué à l'import) — Community Edition.
+
+    Les données proviennent du scan Grype exécuté lors de l'upload du paquet.
+    L'enrichissement EPSS, CISA KEV et la file de révision RSSI sont disponibles
+    en version Enterprise.
+    """
+    # Chargement du manifest (essai avec l'arch demandée, puis fallback toutes archs)
+    manifest = load_manifest(name, version, arch)
+    if not manifest:
+        for m in list_manifests():
+            if m.get("name") == name and m.get("version") == version:
+                manifest = m
+                break
+
+    if not manifest:
+        return {
+            "package": name,
+            "version": version,
+            "arch": arch,
+            "cve_results": [],
+            "summary": {},
+            "total": 0,
+            "scanner": "grype",
+            "edition": "community",
+            "message": "Manifest introuvable — le paquet n'a peut-être pas encore été importé via l'interface.",
+        }
+
+    raw_cve = manifest.get("cve_results", [])
+
+    # Calcul du résumé par sévérité
+    summary: dict[str, int] = {}
+    for c in raw_cve:
+        sev = (c.get("severity") or "unknown").lower()
+        summary[sev] = summary.get(sev, 0) + 1
+
+    # Transformation vers le format attendu par le frontend InspectPanel
+    cve_results = []
+    for c in raw_cve:
+        fix_versions = c.get("fix_versions", [])
+        cve_results.append({
+            "id":               c.get("id", ""),
+            "cve_id":           c.get("id", ""),
+            "severity":         c.get("severity", "Unknown"),
+            "cvss_score":       c.get("cvss"),
+            "description":      c.get("description", ""),
+            "package":          c.get("package_name", ""),
+            "installed_version": c.get("package_version", ""),
+            "fix_version":      fix_versions[0] if fix_versions else None,
+            "fix_state":        c.get("fix_state", "unknown"),
+            "epss_percent":     c.get("epss_percent"),
+            "kev":              c.get("in_kev", False),
+            "urls":             c.get("urls", []),
+        })
+
+    return {
+        "package":    name,
+        "version":    version,
+        "arch":       manifest.get("arch", arch),
+        "cve_results": cve_results,
+        "summary":    summary,
+        "total":      len(cve_results),
+        "scanned_at": manifest.get("source", {}).get("imported_at"),
+        "scanner":    "grype",
+        "edition":    "community",
+    }
 
 
 @router.get("/review-queue")
