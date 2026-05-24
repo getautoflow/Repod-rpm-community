@@ -156,47 +156,6 @@ function ResultBanner({ result }) {
   );
 }
 
-// ─── Barre de progression upload ──────────────────────────────────────────────
-
-function UploadProgressBar({ fileName, progress, fileSize }) {
-  const fmtSize = (bytes) => {
-    if (!bytes) return "";
-    if (bytes < 1024 * 1024) return ` · ${(bytes / 1024).toFixed(0)} Ko`;
-    return ` · ${(bytes / 1024 / 1024).toFixed(1)} Mo`;
-  };
-
-  return (
-    <div className="bg-white border border-blue-200 rounded-xl p-5 space-y-4">
-      <div className="flex items-center gap-3">
-        <div className="w-4 h-4 rounded-full border-2 border-blue-500 border-t-transparent animate-spin flex-shrink-0" />
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-gray-800">Envoi du fichier en cours…</p>
-          {fileName && (
-            <p className="text-xs text-gray-400 font-mono mt-0.5 truncate">
-              {fileName}{fmtSize(fileSize)}
-            </p>
-          )}
-        </div>
-      </div>
-      <div className="space-y-1.5">
-        <div className="flex justify-between text-xs text-gray-500">
-          <span>Transfert réseau</span>
-          <span className="font-mono font-semibold text-blue-600">{progress}%</span>
-        </div>
-        <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-blue-500 rounded-full transition-all duration-200 ease-out"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-        <p className="text-xs text-gray-400">
-          Le pipeline de validation démarrera automatiquement une fois l'envoi terminé.
-        </p>
-      </div>
-    </div>
-  );
-}
-
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function UploadForm() {
@@ -205,12 +164,7 @@ export default function UploadForm() {
   const [steps, setSteps]               = useState([]);
   const [result, setResult]             = useState(null);
   const [fileName, setFileName]         = useState(null);
-  const [fileSize, setFileSize]         = useState(null);
-  // Phase de l'upload : null → 'uploading' (XHR) → 'processing' (SSE) → done
-  const [uploadPhase, setUploadPhase]   = useState(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
   const readerRef = useRef(null);
-  const xhrRef    = useRef(null);
 
   const addOrUpdateStep = (step) => setSteps((prev) => {
     const idx = prev.findIndex((s) => s.name === step.name);
@@ -218,99 +172,29 @@ export default function UploadForm() {
     return [...prev, step];
   });
 
-  const reset = () => {
-    setSteps([]); setResult(null); setFileName(null); setFileSize(null);
-    setUploadPhase(null); setUploadProgress(0);
-  };
-
   const onDrop = useCallback(async (acceptedFiles) => {
     const file = acceptedFiles[0];
     if (!file) return;
     if (!file.name.endsWith(".rpm")) { toast.error("Seuls les fichiers .rpm sont acceptés"); return; }
 
-    setUploading(true);
-    setSteps([]);
-    setResult(null);
-    setFileName(file.name);
-    setFileSize(file.size);
-    setUploadProgress(0);
-    setUploadPhase("uploading");
+    setUploading(true); setSteps([]); setResult(null); setFileName(file.name);
 
     const token = localStorage.getItem("token");
-
-    // ── Phase 1 : Upload via XHR (supporte upload.onprogress) ────────────────
-    // fetch() ne fournit pas de progression pendant l'envoi du corps de la
-    // requête. Pour les gros paquets (> ~50 Mo), le navigateur peut rester
-    // bloqué plusieurs minutes sans feedback. XHR résout ce problème.
-    // ─────────────────────────────────────────────────────────────────────────
-    let stagingId;
-    try {
-      stagingId = await new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhrRef.current = xhr;
-        xhr.open("POST", `${API_URL}/api/v1/upload/stage`);
-        xhr.setRequestHeader("Authorization", `Bearer ${token}`);
-
-        xhr.upload.onprogress = (e) => {
-          if (e.lengthComputable) {
-            setUploadProgress(Math.round((e.loaded / e.total) * 100));
-          }
-        };
-
-        xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            try {
-              const data = JSON.parse(xhr.responseText);
-              resolve(data.staging_id);
-            } catch {
-              reject(new Error("Réponse invalide du serveur"));
-            }
-          } else {
-            try {
-              const data = JSON.parse(xhr.responseText);
-              reject(new Error(data.detail || `Erreur HTTP ${xhr.status}`));
-            } catch {
-              reject(new Error(`Erreur HTTP ${xhr.status}`));
-            }
-          }
-        };
-        xhr.onerror  = () => reject(new Error("Erreur réseau pendant l'upload"));
-        xhr.onabort  = () => reject(new Error("Upload annulé"));
-
-        const fd = new FormData();
-        fd.append("file", file);
-        xhr.send(fd);
-      });
-    } catch (e) {
-      toast.error(e.message);
-      setUploading(false);
-      setUploadPhase(null);
-      return;
-    }
-
-    // ── Phase 2 : Pipeline SSE (validation en temps réel) ─────────────────────
-    // Le fichier est déjà dans le staging — on lance le pipeline immédiatement.
-    // Les étapes apparaissent en temps réel car le corps de la requête POST
-    // est minuscule (JSON avec staging_id) → pas de délai de bufferisation.
-    // ─────────────────────────────────────────────────────────────────────────
-    setUploadPhase("processing");
-    setUploadProgress(100);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("distribution", distribution);
 
     try {
-      const resp = await fetch(`${API_URL}/api/v1/upload/pipeline/${stagingId}`, {
+      const resp = await fetch(`${API_URL}/api/v1/upload/stream`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ distribution }),
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
       });
 
       if (!resp.ok) {
         const err = await resp.json().catch(() => ({ detail: "Erreur serveur" }));
-        toast.error(err.detail || "Erreur lors du pipeline de validation");
+        toast.error(err.detail || "Erreur lors de l'upload");
         setUploading(false);
-        setUploadPhase(null);
         return;
       }
 
@@ -319,38 +203,39 @@ export default function UploadForm() {
       const decoder = new TextDecoder();
       let buffer = "";
 
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const parts = buffer.split("\n\n");
-        buffer = parts.pop();
-        for (const part of parts) {
-          const lines = part.split("\n");
-          let evType = "message", dataStr = "";
-          for (const line of lines) {
-            if (line.startsWith("event: ")) evType = line.slice(7).trim();
-            if (line.startsWith("data: "))  dataStr = line.slice(6).trim();
-          }
-          if (dataStr === "done|DONE") { setUploading(false); setUploadPhase("done"); break; }
-          try {
-            const data = JSON.parse(dataStr);
-            if (evType === "step") {
-              addOrUpdateStep(data);
-            } else if (evType === "result") {
-              setResult(data);
-              if (data.status === "accepted")
-                toast.success(`${data.package} ${data.version} ajouté au dépôt`);
-              else if (data.status === "pending_review")
-                toast(`${data.package} — en attente RSSI`, { icon: "⏳" });
-              else
-                toast.error("Paquet rejeté");
+      try {
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const parts = buffer.split("\n\n");
+          buffer = parts.pop();
+          for (const part of parts) {
+            const lines = part.split("\n");
+            let evType = "message", dataStr = "";
+            for (const line of lines) {
+              if (line.startsWith("event: ")) evType = line.slice(7).trim();
+              if (line.startsWith("data: "))  dataStr = line.slice(6).trim();
             }
-          } catch (_) {}
+            if (dataStr === "done|DONE") { setUploading(false); break; }
+            try {
+              const data = JSON.parse(dataStr);
+              if (evType === "step") {
+                addOrUpdateStep(data);
+              } else if (evType === "result") {
+                setResult(data);
+                if (data.status === "accepted")       toast.success(`${data.package} ${data.version} ajouté au dépôt`);
+                else if (data.status === "pending_review") toast(`${data.package} — en attente RSSI`, { icon: "⏳" });
+                else                                  toast.error("Paquet rejeté");
+              }
+            } catch (_) {}
+          }
         }
+      } catch (streamErr) {
+        toast.error(`Erreur de flux : ${streamErr.message}`);
       }
     } catch (e) {
-      toast.error(`Erreur de flux : ${e.message}`);
+      toast.error(`Erreur réseau : ${e.message}`);
     } finally {
       setUploading(false);
     }
@@ -359,10 +244,6 @@ export default function UploadForm() {
   const { getRootProps, getInputProps, isDragActive, isDragReject } = useDropzone({
     onDrop, accept: { "application/octet-stream": [".rpm"] }, multiple: false, disabled: uploading,
   });
-
-  const showDropzone   = !uploading && steps.length === 0 && !uploadPhase;
-  const showProgress   = uploadPhase === "uploading";
-  const showWorkflow   = uploadPhase === "processing" || uploadPhase === "done" || steps.length > 0;
 
   return (
     <div className="space-y-6 p-6">
@@ -385,10 +266,11 @@ export default function UploadForm() {
         </div>
       </div>
 
-      {/* Drop zone — masquée pendant l'upload */}
-      {showDropzone && (
+      {/* Drop zone */}
+      {steps.length === 0 && (
         <div {...getRootProps()}
           className={`border-2 border-dashed rounded-xl p-14 text-center cursor-pointer transition-all
+            ${uploading ? "opacity-50 cursor-not-allowed" : ""}
             ${isDragReject ? "border-red-400 bg-red-50" : ""}
             ${isDragActive && !isDragReject ? "border-blue-500 bg-blue-50" : ""}
             ${!isDragActive && !isDragReject ? "border-gray-300 hover:border-blue-400 hover:bg-gray-50 bg-white" : ""}`}>
@@ -406,17 +288,8 @@ export default function UploadForm() {
         </div>
       )}
 
-      {/* Phase 1 — Barre de progression de l'envoi (XHR) */}
-      {showProgress && (
-        <UploadProgressBar
-          fileName={fileName}
-          progress={uploadProgress}
-          fileSize={fileSize}
-        />
-      )}
-
-      {/* Phase 2 — Workflow SSE */}
-      {showWorkflow && (
+      {/* Workflow */}
+      {steps.length > 0 && (
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
           <div className="px-4 py-3.5 border-b border-gray-100 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -429,7 +302,7 @@ export default function UploadForm() {
               </div>
             </div>
             {!uploading && (
-              <button onClick={reset}
+              <button onClick={() => { setSteps([]); setResult(null); setFileName(null); }}
                 className="text-xs text-gray-400 hover:text-gray-600 border border-gray-200 rounded-lg px-3 py-1.5 transition-colors">
                 Nouvel upload
               </button>
