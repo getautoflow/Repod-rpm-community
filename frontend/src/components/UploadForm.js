@@ -8,7 +8,7 @@ import { getApiBaseUrl } from "../api";
 const API_URL = getApiBaseUrl();
 
 const DISTRIBUTIONS = [
-  { codename: "almalinux8",        label: "AlmaLinux 8",           star: true },
+  { codename: "almalinux8",        label: "AlmaLinux 8" },
   { codename: "rocky8",            label: "Rocky Linux 8" },
   { codename: "centos-stream9",    label: "CentOS Stream 9" },
   { codename: "oraclelinux8",      label: "Oracle Linux 8" },
@@ -260,7 +260,7 @@ export default function UploadForm() {
             <button key={d.codename} type="button" onClick={() => !uploading && setDistribution(d.codename)} disabled={uploading}
               className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors disabled:opacity-50
                 ${distribution === d.codename ? "bg-blue-600 text-white border-blue-600" : "text-gray-600 border-gray-200 hover:border-blue-400 hover:text-blue-600"}`}>
-              {d.label}{d.star ? " ★" : ""}
+              {d.label}
             </button>
           ))}
         </div>

@@ -221,7 +221,7 @@ function HelpMenu() {
           {/* En-tête */}
           <div className="px-4 py-3 bg-slate-50 border-b border-slate-200">
             <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Centre d'aide</p>
-            <p className="text-[11px] text-slate-400 mt-0.5">Repod — Community Edition</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">Repod — RPM Repository</p>
           </div>
 
           {/* Sections */}
@@ -269,7 +269,7 @@ function HelpMenu() {
               <span className="text-indigo-300 text-[10px] font-normal">CVE · SBOM · LDAP</span>
             </a>
             <p className="text-[10px] text-slate-400 text-center mt-2">
-              Repod Community — <span className="font-mono">v1.0.1</span>
+              Repod Community — <span className="font-mono">v1.0.6</span>
             </p>
           </div>
         </div>
@@ -621,8 +621,8 @@ export default function DashboardLayout() {
           <img src="/logo.png" alt="Repod" className="w-9 h-9 object-contain shrink-0" />
           <div className="min-w-0">
             <p className="text-white font-black text-base tracking-wider uppercase leading-none">Repod</p>
-            <span className="inline-block mt-0.5 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-navy-700 text-slate-400">
-              Community
+            <span className="inline-block mt-0.5 text-[9px] font-bold uppercase tracking-wider text-slate-500">
+              RPM Repository
             </span>
           </div>
         </div>

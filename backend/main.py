@@ -86,8 +86,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Repod RPM Community",
-    version="1.0.0",
+    title="Repod RPM – Community Edition",
+    version="1.0.6-community",
     lifespan=lifespan,
     docs_url=_docs_url,
     redoc_url=_redoc_url,

@@ -78,8 +78,34 @@ const STATUS_META = {
   upgrade_required: { label:"Upgrade requis", color:T.teal },
 };
 
+// ─── Enterprise lock overlay ──────────────────────────────────────────────────
+function EnterpriseLock({ children, small = false }) {
+  return (
+    <div style={{ position:"relative", height:"100%", width:"100%" }}>
+      <div style={{ filter:"grayscale(1) opacity(0.35)", pointerEvents:"none", height:"100%", width:"100%" }}>
+        {children}
+      </div>
+      <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column",
+        alignItems:"center", justifyContent:"center", gap: small ? 6 : 10 }}>
+        <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:6,
+          background:"rgba(255,255,255,0.92)", borderRadius:12, padding: small ? "8px 14px" : "12px 20px",
+          border:"1px solid #E2E8F0", boxShadow:"0 2px 8px rgba(0,0,0,0.08)" }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#6366F1" strokeWidth={2}
+            strokeLinecap="round" strokeLinejoin="round"
+            style={{ width: small ? 14 : 18, height: small ? 14 : 18 }}>
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0110 0v4"/>
+          </svg>
+          <span style={{ fontSize: small ? 9 : 10, fontWeight:700, color:"#6366F1",
+            textTransform:"uppercase", letterSpacing:"0.06em" }}>Enterprise</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Wrapper Panel ────────────────────────────────────────────────────────────
-function Panel({ title, children, onHeaderClick, badge, icon }) {
+function Panel({ title, children, onHeaderClick, badge, icon, enterprise = false }) {
   return (
     <div style={{
       background: T.panel,
@@ -106,7 +132,11 @@ function Panel({ title, children, onHeaderClick, badge, icon }) {
           <span style={{ fontSize:"11px", fontWeight:700, letterSpacing:"0.06em", textTransform:"uppercase", color: T.sub }}>
             {title}
           </span>
-          {badge != null && badge > 0 && (
+          {enterprise && (
+            <span style={{ fontSize:"9px", fontWeight:700, padding:"1px 6px", borderRadius:"99px",
+              background:"#EEF2FF", color:"#6366F1", border:"1px solid #C7D2FE" }}>Enterprise</span>
+          )}
+          {!enterprise && badge != null && badge > 0 && (
             <span style={{
               fontSize:"10px", fontWeight:700,
               padding:"1px 6px", borderRadius:"99px",
@@ -115,7 +145,7 @@ function Panel({ title, children, onHeaderClick, badge, icon }) {
             }}>{badge}</span>
           )}
         </div>
-        {onHeaderClick && (
+        {!enterprise && onHeaderClick && (
           <button onClick={onHeaderClick} style={{
             fontSize:"11px", fontWeight:600, color: T.blue,
             background:"none", border:"none", cursor:"pointer", padding:0,
@@ -126,14 +156,14 @@ function Panel({ title, children, onHeaderClick, badge, icon }) {
       </div>
       {/* Body */}
       <div style={{ flex:1, overflow:"hidden", padding:"14px 16px", minHeight:0 }}>
-        {children}
+        {enterprise ? <EnterpriseLock>{children}</EnterpriseLock> : children}
       </div>
     </div>
   );
 }
 
 // ─── Stat panel ───────────────────────────────────────────────────────────────
-function StatPanel({ label, value, sub, color, iconPath, onClick }) {
+function StatPanelInner({ label, value, sub, color, iconPath, onClick }) {
   return (
     <div
       onClick={onClick}
@@ -174,6 +204,19 @@ function StatPanel({ label, value, sub, color, iconPath, onClick }) {
         </div>
         {sub && <p style={{ fontSize:"11px", color: T.muted, marginTop:4 }}>{sub}</p>}
       </div>
+    </div>
+  );
+}
+
+function StatPanel({ label, value, sub, color, iconPath, onClick, enterprise = false }) {
+  const inner = <StatPanelInner label={label} value={value} sub={sub} color={color} iconPath={iconPath} onClick={enterprise ? undefined : onClick} />;
+  if (!enterprise) return inner;
+  return (
+    <div style={{
+      background: T.panel, border:`1px solid ${T.border}`, borderRadius:"12px",
+      height:"100%", boxShadow:"0 1px 3px rgba(0,0,0,0.06)",
+    }}>
+      <EnterpriseLock small>{inner}</EnterpriseLock>
     </div>
   );
 }
@@ -641,6 +684,7 @@ export default function DashboardPage() {
             sub={needsAction>0 ? "action(s) requise(s)" : "décision(s) active(s)"}
             color={needsAction>0 ? T.orange : T.indigo}
             onClick={()=>navigate("/security")}
+            enterprise
             iconPath="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
         </div>
 
@@ -653,7 +697,7 @@ export default function DashboardPage() {
         </div>
 
         <div key="cve-posture">
-          <Panel title="Posture CVE — Grype" icon={
+          <Panel title="Posture CVE — Grype" enterprise icon={
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} style={{width:13,height:13}}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
             </svg>}>
@@ -662,7 +706,7 @@ export default function DashboardPage() {
         </div>
 
         <div key="security-review">
-          <Panel title="Révision RSSI" badge={needsAction} onHeaderClick={()=>navigate("/security")} icon={
+          <Panel title="Révision RSSI" enterprise badge={needsAction} onHeaderClick={()=>navigate("/security")} icon={
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} style={{width:13,height:13}}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>}>

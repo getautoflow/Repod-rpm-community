@@ -468,7 +468,7 @@ def run_validation_pipeline(
         if not result.passed:
             return result
 
-    # 4. Scan CVE Grype
+    # 4. Scan CVE Grype — Community Edition : informatif uniquement, jamais bloquant
     if cfg.get("grype_scan", True):
         fail_on     = cfg.get("grype_fail_on", "critical")
         cve_policy  = get_settings().get("cve_policy")
@@ -483,6 +483,8 @@ def run_validation_pipeline(
             )
         except Exception as exc:
             result.add_step("cve", True, "Grype — erreur inattendue (ignorée)", str(exc)[:300])
+        # Community Edition : les CVE ne bloquent jamais l'import
+        result.cve_status = "approved"
         if result.cve_status == "blocked":
             result.passed = False
             return result

@@ -3,7 +3,7 @@ import toast from "react-hot-toast";
 import { listArtifacts, deleteArtifact, syncIndex, getArtifact, resolveDependencies, getApiBaseUrl, getPackageCve, getPackageDecision, getAuditLogs } from "../api";
 import Paginator from "./Paginator";
 
-const REPO_URL = process.env.REACT_APP_REPO_URL || "http://localhost:80";
+const REPO_URL = process.env.REACT_APP_REPO_URL || "http://localhost:8180";
 const API_URL = getApiBaseUrl();
 
 function formatBytes(bytes) {

@@ -99,7 +99,7 @@ async def upload_package(
     shutil.move(str(staging_path), str(pool_path))
 
     cve_status = validation.cve_status
-    manifest_status = "pending_review" if cve_status == "pending_review" else "validated"
+    manifest_status = "validated"  # Community Edition : pas de révision RSSI
 
     manifest = generate_manifest(
         str(pool_path),
@@ -114,48 +114,24 @@ async def upload_package(
     add_to_index(manifest)
 
     # Ajout au dépôt RPM via add-rpm.sh (createrepo_c) — thread pool
-    if cve_status != "pending_review":
-        await asyncio.to_thread(
-            subprocess.run,
-            ["sh", ADD_RPM_SCRIPT, distribution, pool_path.name],
-            capture_output=True, text=True,
-            env={**os.environ,
-                 "GNUPG_HOME": os.getenv("GNUPG_HOME", "/repos/gnupg"),
-                 "REPO_BASE": os.getenv("REPO_BASE", "/repos")},
-        )
+    await asyncio.to_thread(
+        subprocess.run,
+        ["sh", ADD_RPM_SCRIPT, distribution, pool_path.name],
+        capture_output=True, text=True,
+        env={**os.environ,
+             "GNUPG_HOME": os.getenv("GNUPG_HOME", "/repos/gnupg"),
+             "REPO_BASE": os.getenv("REPO_BASE", "/repos")},
+    )
 
     audit_log(
-        "UPLOAD", current_user,
-        "PENDING_REVIEW" if cve_status == "pending_review" else "SUCCESS",
+        "UPLOAD", current_user, "SUCCESS",
         package=manifest["name"],
         version=manifest["version"],
-        detail=(
-            "En attente de révision RSSI — CVE politique déclenchée"
-            if cve_status == "pending_review"
-            else f"sha256={manifest['integrity']['sha256']}"
-        ),
+        detail=f"sha256={manifest['integrity']['sha256']}",
         extra={"validation_steps": validation.steps, "cve_status": cve_status},
     )
 
     warnings = [s for s in validation.steps if s.get("warning") and not s["passed"]]
-
-    # Community Edition: CVE notifications are an Enterprise feature
-
-    if cve_status == "pending_review":
-        return {
-            "status":    "pending_review",
-            "filename":  safe_filename,
-            "package":   manifest["name"],
-            "version":   manifest["version"],
-            "arch":      manifest["arch"],
-            "sha256":    manifest["integrity"]["sha256"],
-            "validation": validation.to_dict(),
-            "warnings":  warnings,
-            "message": (
-                f"{manifest['name']} {manifest['version']} importé mais "
-                "en attente de révision RSSI — non publié dans le dépôt RPM"
-            ),
-        }
 
     return {
         "status":    "accepted",
@@ -231,7 +207,7 @@ async def _upload_stream_generator(safe_filename: str, staging_path: Path, distr
 
         yield step("manifest", "Génération du manifest", "running")
         cve_status = validation.cve_status
-        manifest_status = "pending_review" if cve_status == "pending_review" else "validated"
+        manifest_status = "validated"  # Community Edition : pas de révision RSSI
         manifest = generate_manifest(
             str(pool_path), imported_by=current_user,
             validated_deps=validation.deps if validation.deps else None,
@@ -248,41 +224,32 @@ async def _upload_stream_generator(safe_filename: str, staging_path: Path, distr
         add_to_index(manifest)
         yield step("index", "Mise à jour de l'index", "done")
 
-        if cve_status != "pending_review":
-            yield step("createrepo", "Mise à jour dépôt RPM (createrepo_c)", "running",
-                       f"Distribution : {distribution}")
-            r = await asyncio.to_thread(
-                subprocess.run,
-                ["sh", ADD_RPM_SCRIPT, distribution, pool_path.name],
-                capture_output=True, text=True,
-                env={**os.environ,
-                     "GNUPG_HOME": os.getenv("GNUPG_HOME", "/repos/gnupg"),
-                     "REPO_BASE": os.getenv("REPO_BASE", "/repos")},
-            )
-            createrepo_ok = r.returncode == 0
-            yield step("createrepo", "Mise à jour dépôt RPM (createrepo_c)",
-                       "done" if createrepo_ok else "warn",
-                       (r.stdout or r.stderr or "").strip()[:120])
-        else:
-            yield step("createrepo", "Mise à jour dépôt RPM (createrepo_c)", "warn",
-                       "En attente de révision RSSI — non publié dans le dépôt")
+        yield step("createrepo", "Mise à jour dépôt RPM (createrepo_c)", "running",
+                   f"Distribution : {distribution}")
+        r = await asyncio.to_thread(
+            subprocess.run,
+            ["sh", ADD_RPM_SCRIPT, distribution, pool_path.name],
+            capture_output=True, text=True,
+            env={**os.environ,
+                 "GNUPG_HOME": os.getenv("GNUPG_HOME", "/repos/gnupg"),
+                 "REPO_BASE": os.getenv("REPO_BASE", "/repos")},
+        )
+        createrepo_ok = r.returncode == 0
+        yield step("createrepo", "Mise à jour dépôt RPM (createrepo_c)",
+                   "done" if createrepo_ok else "warn",
+                   (r.stdout or r.stderr or "").strip()[:120])
 
-        audit_log("UPLOAD", current_user,
-                  "PENDING_REVIEW" if cve_status == "pending_review" else "SUCCESS",
+        audit_log("UPLOAD", current_user, "SUCCESS",
                   package=manifest["name"], version=manifest["version"],
                   detail=f"sha256={manifest['integrity']['sha256']}",
                   extra={"validation_steps": validation.steps, "cve_status": cve_status})
 
         yield _sse("result", {
-            "status": "pending_review" if cve_status == "pending_review" else "accepted",
+            "status": "accepted",
             "package": manifest["name"], "version": manifest["version"],
             "arch": manifest["arch"], "sha256": manifest["integrity"]["sha256"],
             "distribution": distribution,
-            "message": (
-                f"{manifest['name']} {manifest['version']} importé — en attente de révision RSSI"
-                if cve_status == "pending_review"
-                else f"{manifest['name']} {manifest['version']} ajouté au dépôt {distribution}"
-            ),
+            "message": f"{manifest['name']} {manifest['version']} ajouté au dépôt {distribution}",
             "validation": validation.to_dict(),
         })
 

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
 
-const REPO_URL = process.env.REACT_APP_REPO_URL || "http://localhost:80";
+const REPO_URL = process.env.REACT_APP_REPO_URL || "http://localhost:8180";
 const REPO_HOST = REPO_URL.replace(/^https?:\/\//, "").replace(/:\d+$/, "");
 
 // ─── Composants ───────────────────────────────────────────────────────────────
