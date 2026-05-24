@@ -500,6 +500,7 @@ class TestFrontendPackageListPagination:
 
 
 class TestFrontendAuditPagePagination:
+    """AuditPage est gateée en Community — elle délègue à EnterpriseGate."""
 
     @staticmethod
     def _src() -> str:
@@ -507,20 +508,17 @@ class TestFrontendAuditPagePagination:
         assert p.exists()
         return p.read_text()
 
-    def test_paginator_imported_in_auditpage(self):
+    def test_auditpage_uses_enterprise_gate(self):
         src = self._src()
-        assert "Paginator" in src, "AuditPage.js doit importer Paginator"
+        assert "EnterpriseGate" in src, "AuditPage.js (Community) doit déléguer à EnterpriseGate"
 
-    def test_page_state_in_auditpage(self):
-        src = self._src()
-        assert "page" in src.lower(), "AuditPage.js doit avoir un état 'page'"
-
-    def test_paginator_rendered_in_auditpage(self):
-        src = self._src()
-        assert "<Paginator" in src, "AuditPage.js doit rendre <Paginator>"
+    def test_auditpage_file_exists(self):
+        p = Path(__file__).parent.parent.parent / "frontend" / "src" / "pages" / "AuditPage.js"
+        assert p.exists(), "AuditPage.js doit exister"
 
 
 class TestFrontendSecurityPagePagination:
+    """SecurityPage (Community) expose ClamAV et gate la section CVE via EnterpriseGate."""
 
     @staticmethod
     def _src() -> str:
@@ -528,17 +526,18 @@ class TestFrontendSecurityPagePagination:
         assert p.exists()
         return p.read_text()
 
-    def test_paginator_imported_in_securitypage(self):
+    def test_securitypage_has_clamav(self):
         src = self._src()
-        assert "Paginator" in src, "SecurityPage.js doit importer Paginator"
-
-    def test_paginator_rendered_in_review_queue(self):
-        src = self._src()
-        assert "<Paginator" in src, "SecurityPage.js doit rendre <Paginator>"
-
-    def test_pkgpage_state_in_cveposture(self):
-        """CvePostureSection doit avoir un état pkgPage pour la pagination client-side."""
-        src = self._src()
-        assert "pkgPage" in src, (
-            "SecurityPage.js CvePostureSection doit avoir l'état 'pkgPage'"
+        assert "ClamAV" in src or "clamav" in src.lower(), (
+            "SecurityPage.js doit afficher la section ClamAV"
         )
+
+    def test_securitypage_uses_enterprise_gate(self):
+        src = self._src()
+        assert "EnterpriseGate" in src, (
+            "SecurityPage.js (Community) doit intégrer EnterpriseGate pour la section CVE"
+        )
+
+    def test_securitypage_file_exists(self):
+        p = Path(__file__).parent.parent.parent / "frontend" / "src" / "pages" / "SecurityPage.js"
+        assert p.exists(), "SecurityPage.js doit exister"
