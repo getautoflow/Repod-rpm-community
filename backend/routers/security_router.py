@@ -127,6 +127,7 @@ def get_vulnerabilities(
     _: None = Depends(require_enterprise),
 ):
     """CVE vulnerability view — Enterprise Edition only."""
+    # Enterprise: return paginate(cve_list, page=page, per_page=per_page)
 
 
 @router.get("/packages-posture")
@@ -140,8 +141,13 @@ def get_package_cve(name: str, version: str, _: None = Depends(require_enterpris
 
 
 @router.get("/review-queue")
-def get_review_queue(_: None = Depends(require_enterprise)):
+def get_review_queue(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(50, ge=1, le=200),
+    _: None = Depends(require_enterprise),
+):
     """CISO review queue — Enterprise Edition only."""
+    # Enterprise: return paginate(packages, page=page, per_page=per_page)
 
 
 @router.post("/check-sla")
