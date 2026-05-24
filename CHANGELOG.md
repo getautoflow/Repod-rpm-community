@@ -11,7 +11,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) · Versioning: 
 - **CVE display in packages** — `GET /security/packages/{name}/{version}/cve` now returns Grype scan results stored in the manifest (scanned at import time). CVE tab in the package inspector shows vulnerability list, severity badges, CVSS scores, and fix versions. EPSS enrichment, CISA KEV cross-reference and CISO review queue remain Enterprise-gated.
 
 ### Changed
-- **Upload pipeline** — Workflow visualization (all steps including Grype CVE scan) is fully active in Community Edition. Each step streams in real time via SSE.
+- **Upload pipeline — progressive streaming** — Each validation step (Format .rpm, SHA-256, ClamAV, CVE/Grype, GPG, Dependencies) now emits a `running` event immediately when it starts and a `done/error/warn` event when it finishes. The pipeline was previously blocking — all sub-steps appeared at once after the full validation completed. Steps now appear one by one in real time.
 
 ---
 
