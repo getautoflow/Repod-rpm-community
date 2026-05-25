@@ -1,4 +1,8 @@
-# Repod — RPM Community Edition
+<p align="center">
+  <img src="logo.png" alt="Repod" width="80" />
+</p>
+
+<h1 align="center">Repod — RPM Community Edition</h1>
 
 [![Version](https://img.shields.io/badge/version-1.0.6-0F2A50)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
