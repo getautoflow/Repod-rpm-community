@@ -5,6 +5,25 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) · Versioning: 
 
 ---
 
+## [1.0.6] — 2026-05-24
+
+### Changed
+- **Configuration** — `.env.example` et `backend.env.example` nettoyés pour la production : toutes les valeurs de test/développement supprimées, ports RPM Community alignés (8180/8100/3103) sans conflit avec APT Community (8280/8200/3203).
+- **docker-compose.yaml** — Ports par défaut corrigés (8180/8100/3103), `REACT_APP_API_URL` en mode URLs relatives par défaut, `REPOD_EDITION: community` ajouté aux variables d'environnement du backend.
+- **nginx (frontend)** — Le reverse proxy `location /api/ { proxy_pass http://backend:8000; }` (sans trailing slash) est confirmé fonctionnel : toutes les requêtes API transitent par le frontend nginx, éliminant les problèmes de CORS et d'accès depuis une IP distante. Le proxy passe le chemin complet au backend (qui utilise le préfixe `/api/v1`).
+- **CVE — politique Community Edition** — Le scan Grype est **informatif uniquement** : `cve_status` est toujours forcé à `"approved"` après le scan, quel que soit le résultat. Aucun paquet ne peut être bloqué ou mis en révision par les CVE en Community. Les résultats restent visibles dans l'inspecteur de paquet. Le blocage et la file de révision RSSI sont des fonctionnalités Enterprise.
+- **Upload pipeline** — Suppression de la logique `pending_review` (Enterprise) dans `upload.py` : `manifest_status` est toujours `"validated"`, `createrepo_c` s'exécute systématiquement, le retour est toujours `"accepted"`. Valable pour les deux endpoints (`POST /upload/` JSON et `POST /upload/stream` SSE).
+- **Dashboard — overlays Enterprise** — Les panneaux `Révision RSSI`, `Posture CVE` et la stat `Révision RSSI` sont maintenant grisés avec un badge `Enterprise` et une icône cadenas. Ils restent visibles pour montrer ce qui est disponible en Enterprise, mais ne sont pas interactifs.
+- **Badge sidebar** — Le badge `Community` (fond coloré) est remplacé par le texte `RPM Repository` sans fond, plus sobre et distinctif.
+- **REPO_URL** — La valeur par défaut du fallback `REACT_APP_REPO_URL` est corrigée de `localhost:80` à `localhost:8180` dans le Dockerfile frontend, `ClientSetupPage.js` et `PackageList.js`.
+- **Distribution** — L'étoile ★ retirée du sélecteur d'upload (AlmaLinux 8 ne mérite pas de mise en avant particulière).
+- **Version** — Frontend et backend mis à jour en `v1.0.6`.
+- **README** — Réécriture complète en français : ports RPM (8180/8100/3103), tableau Community vs Enterprise, avertissement explicite sur le scan CVE non bloquant, architecture ASCII, référence API complète, exemples dnf/yum/zypper, procédure de mise à jour.
+- **CONTRIBUTING.md** — Nouveau fichier de guide de contribution adapté RPM : scope Community, conventions de code, workflow de PR, portée hors périmètre (fonctionnalités Enterprise uniquement).
+- **LICENSE** — Copyright © 2026 NGANDO ARMEL — Getautoflow ajouté en en-tête.
+
+---
+
 ## [1.0.5] — 2026-05-24
 
 ### Fixed
