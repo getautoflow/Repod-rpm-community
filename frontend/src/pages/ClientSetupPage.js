@@ -114,35 +114,34 @@ echo "Dépôt interne configuré avec succès."`;
   return (
     <div className="space-y-8 p-6">
       <InfoBox type="info">
-        Ces étapes connectent la machine au dépôt RPM interne via DNF/YUM (AlmaLinux, Rocky, CentOS, Oracle, Fedora).
-        La clé GPG garantit l'authenticité des paquets signés.
+        {t('setup.dnf.intro')}
       </InfoBox>
 
       <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-8">
-        <Step number="1" title="Importer la clé GPG du dépôt">
+        <Step number="1" title={t('setup.dnf.step1')}>
           <p className="text-sm text-gray-600">
-            Enregistre la clé publique du dépôt dans la base RPM de la machine.
+            {t('setup.dnf.step1Desc')}
           </p>
           <CodeBlock code={`sudo rpm --import ${REPO_URL}/repos/RPM-GPG-KEY-DepotRPM`} label="bash" />
         </Step>
 
-        <Step number="2" title="Créer le fichier .repo">
+        <Step number="2" title={t('setup.dnf.step2')}>
           <p className="text-sm text-gray-600">
-            Déclare le dépôt interne comme source de paquets DNF/YUM.
+            {t('setup.dnf.step2Desc')}
           </p>
           <CodeBlock code={`cat << 'EOF' | sudo tee ${repoFile}\n${repoContent}\nEOF`} label="bash" />
           <p className="text-xs text-gray-400">
-            Fichier créé : <code className="bg-gray-100 px-1 rounded">{repoFile}</code>
+            {t('setup.dnf.fileCreated')} <code className="bg-gray-100 px-1 rounded">{repoFile}</code>
           </p>
         </Step>
 
-        <Step number="3" title="Vérifier et rafraîchir la liste des paquets">
+        <Step number="3" title={t('setup.dnf.step3')}>
           <CodeBlock code={`sudo dnf repolist\nsudo dnf makecache`} label="bash" />
         </Step>
 
-        <Step number="4" title="Installer un paquet">
+        <Step number="4" title={t('setup.dnf.step4')}>
           <p className="text-sm text-gray-600">
-            Une fois le dépôt configuré, l'installation se fait normalement.
+            {t('setup.dnf.step4Desc')}
           </p>
           <CodeBlock code="sudo dnf install <nom-du-paquet>" label="bash" />
         </Step>
@@ -151,7 +150,7 @@ echo "Dépôt interne configuré avec succès."`;
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold text-gray-900">{t('setup.fullScript')}</h2>
-          <span className="text-xs text-gray-400">Pour automatiser la configuration</span>
+          <span className="text-xs text-gray-400">{t('setup.automateConfig')}</span>
         </div>
         <CodeBlock code={fullScript} label="setup-depot-dnf.sh" />
       </div>
@@ -169,9 +168,9 @@ echo "Dépôt interne configuré avec succès."`;
       <InfoBox type="warning">
         <p className="font-medium">{t('setup.networkAccess')}</p>
         <p className="mt-0.5">
-          La machine doit pouvoir atteindre{" "}
+          {t('setup.networkReachPrefix')}{" "}
           <code className="bg-amber-100 px-1 rounded font-mono text-xs">{REPO_URL}</code>{" "}
-          sur le réseau interne. Aucune connexion internet n'est nécessaire.
+          {t('setup.networkReachSuffix')}
         </p>
       </InfoBox>
     </div>
@@ -205,27 +204,26 @@ echo "Dépôt interne configuré avec succès."`;
   return (
     <div className="space-y-8 p-6">
       <InfoBox type="info">
-        Ces étapes connectent la machine au dépôt RPM interne via Zypper (openSUSE Leap / Tumbleweed).
-        La clé GPG garantit l'authenticité des paquets signés.
+        {t('setup.zypper.intro')}
       </InfoBox>
 
       <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-8">
-        <Step number="1" title="Importer la clé GPG du dépôt">
+        <Step number="1" title={t('setup.zypper.step1')}>
           <CodeBlock code={`sudo rpm --import ${REPO_URL}/repos/RPM-GPG-KEY-DepotRPM`} label="bash" />
         </Step>
 
-        <Step number="2" title="Ajouter le dépôt avec Zypper">
+        <Step number="2" title={t('setup.zypper.step2')}>
           <p className="text-sm text-gray-600">
-            Enregistre le dépôt et active la vérification GPG.
+            {t('setup.zypper.step2Desc')}
           </p>
           <CodeBlock code={`sudo zypper addrepo --refresh --gpgcheck \\\n  ${repoUrl} \\\n  ${repoAlias}`} label="bash" />
         </Step>
 
-        <Step number="3" title="Rafraîchir les métadonnées">
+        <Step number="3" title={t('setup.zypper.step3')}>
           <CodeBlock code="sudo zypper refresh" label="bash" />
         </Step>
 
-        <Step number="4" title="Installer un paquet">
+        <Step number="4" title={t('setup.zypper.step4')}>
           <CodeBlock code="sudo zypper install <nom-du-paquet>" label="bash" />
         </Step>
       </div>
@@ -246,9 +244,9 @@ echo "Dépôt interne configuré avec succès."`;
       <InfoBox type="warning">
         <p className="font-medium">{t('setup.networkAccess')}</p>
         <p className="mt-0.5">
-          La machine doit pouvoir atteindre{" "}
+          {t('setup.networkReachPrefix')}{" "}
           <code className="bg-amber-100 px-1 rounded font-mono text-xs">{REPO_URL}</code>{" "}
-          sur le réseau interne.
+          {t('setup.networkReachSuffixShort')}
         </p>
       </InfoBox>
     </div>
@@ -258,6 +256,7 @@ echo "Dépôt interne configuré avec succès."`;
 // ─── Onglet 3 : Isolation réseau ─────────────────────────────────────────────
 
 function TabIsolation({ distro, family }) {
+  const { t } = useTranslation();
   const isDnf = family === "dnf";
 
   const disableSources = isDnf
@@ -309,26 +308,25 @@ curl -v --max-time 5 ${REPO_URL}/repos/RPM-GPG-KEY-DepotRPM 2>&1 | grep -E "200|
   return (
     <div className="space-y-8 p-6">
       <InfoBox type="danger">
-        <p className="font-medium">Étape critique — À faire après la connexion au dépôt interne</p>
+        <p className="font-medium">{t('setup.isolation.criticalStep')}</p>
         <p className="mt-1">
-          Ces commandes désactivent les sources internet publiques. Assurez-vous que le dépôt interne
-          est correctement configuré avant de les exécuter.
+          {t('setup.isolation.criticalStepDesc')}
         </p>
       </InfoBox>
 
       <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-8">
-        <Step number="1" title="Désactiver les sources publiques" warning>
+        <Step number="1" title={t('setup.isolation.step1')} warning>
           <CodeBlock code={disableSources} label="bash" />
         </Step>
 
-        <Step number="2" title="Bloquer les dépôts publics au niveau firewall">
+        <Step number="2" title={t('setup.isolation.step2')}>
           <p className="text-sm text-gray-600">
-            Double protection réseau même si un dépôt public est réintroduit par erreur.
+            {t('setup.isolation.step2Desc')}
           </p>
           <CodeBlock code={ufwRules} label="bash" />
         </Step>
 
-        <Step number="3" title="Tester l'isolation">
+        <Step number="3" title={t('setup.isolation.step3')}>
           <CodeBlock code={testIsolation} label="bash" />
         </Step>
       </div>
@@ -397,10 +395,9 @@ sudo systemctl enable --now depot-update.timer`;
   return (
     <div className="space-y-8 p-6">
       <InfoBox type="info">
-        <p className="font-medium">Principe</p>
+        <p className="font-medium">{t('setup.principle')}</p>
         <p className="mt-1">
-          Les mises à jour automatiques appliquent uniquement les paquets provenant du dépôt interne,
-          sans connexion internet. Seuls les paquets validés et signés sont installés.
+          {t('setup.autoUpdate.principleDesc')}
         </p>
       </InfoBox>
 
@@ -416,17 +413,15 @@ sudo systemctl enable --now depot-update.timer`;
         <div className="space-y-3 text-sm text-gray-600">
           <div className="flex gap-3">
             <span className="text-blue-500 font-bold shrink-0">→</span>
-            <p><strong>Jamais de redémarrage automatique</strong> sur les serveurs de production.
-              Planifier une fenêtre de maintenance.</p>
+            <p><strong>{t('setup.neverAutoReboot')}</strong> {t('setup.neverAutoRebootDesc')}</p>
           </div>
           <div className="flex gap-3">
             <span className="text-blue-500 font-bold shrink-0">→</span>
-            <p><strong>Tester d'abord</strong> sur un serveur de staging avant de promouvoir
-              vers la distribution de production dans le gestionnaire de dépôts.</p>
+            <p><strong>{t('setup.testFirst')}</strong> {t('setup.testFirstDesc')}</p>
           </div>
           <div className="flex gap-3">
             <span className="text-blue-500 font-bold shrink-0">→</span>
-            <p><strong>Surveiller les logs</strong>{" "}
+            <p><strong>{t('setup.monitorLogs')}</strong>{" "}
               {isDnf
                 ? <code className="bg-gray-100 px-1 rounded text-xs">/var/log/dnf/automatic.log</code>
                 : <code className="bg-gray-100 px-1 rounded text-xs">journalctl -u depot-update</code>

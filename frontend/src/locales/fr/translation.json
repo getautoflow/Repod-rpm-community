@@ -639,8 +639,44 @@
     "verifyConfig": "Vérifier la configuration",
     "principle": "Principe",
     "neverAutoReboot": "Jamais de redémarrage automatique",
+    "neverAutoRebootDesc": "sur les serveurs de production. Planifier une fenêtre de maintenance.",
     "testFirst": "Tester d'abord",
-    "monitorLogs": "Surveiller les logs"
+    "testFirstDesc": "sur un serveur de staging avant de promouvoir vers la distribution de production dans le gestionnaire de dépôts.",
+    "monitorLogs": "Surveiller les logs",
+    "automateConfig": "Pour automatiser la configuration",
+    "networkReachPrefix": "La machine doit pouvoir atteindre",
+    "networkReachSuffix": "sur le réseau interne. Aucune connexion internet n'est nécessaire.",
+    "networkReachSuffixShort": "sur le réseau interne.",
+    "dnf": {
+      "intro": "Ces étapes connectent la machine au dépôt RPM interne via DNF/YUM (AlmaLinux, Rocky, CentOS, Oracle, Fedora). La clé GPG garantit l'authenticité des paquets signés.",
+      "step1": "Importer la clé GPG du dépôt",
+      "step1Desc": "Enregistre la clé publique du dépôt dans la base RPM de la machine.",
+      "step2": "Créer le fichier .repo",
+      "step2Desc": "Déclare le dépôt interne comme source de paquets DNF/YUM.",
+      "fileCreated": "Fichier créé :",
+      "step3": "Vérifier et rafraîchir la liste des paquets",
+      "step4": "Installer un paquet",
+      "step4Desc": "Une fois le dépôt configuré, l'installation se fait normalement."
+    },
+    "zypper": {
+      "intro": "Ces étapes connectent la machine au dépôt RPM interne via Zypper (openSUSE Leap / Tumbleweed). La clé GPG garantit l'authenticité des paquets signés.",
+      "step1": "Importer la clé GPG du dépôt",
+      "step2": "Ajouter le dépôt avec Zypper",
+      "step2Desc": "Enregistre le dépôt et active la vérification GPG.",
+      "step3": "Rafraîchir les métadonnées",
+      "step4": "Installer un paquet"
+    },
+    "isolation": {
+      "criticalStep": "Étape critique — À faire après la connexion au dépôt interne",
+      "criticalStepDesc": "Ces commandes désactivent les sources internet publiques. Assurez-vous que le dépôt interne est correctement configuré avant de les exécuter.",
+      "step1": "Désactiver les sources publiques",
+      "step2": "Bloquer les dépôts publics au niveau firewall",
+      "step2Desc": "Double protection réseau même si un dépôt public est réintroduit par erreur.",
+      "step3": "Tester l'isolation"
+    },
+    "autoUpdate": {
+      "principleDesc": "Les mises à jour automatiques appliquent uniquement les paquets provenant du dépôt interne, sans connexion internet. Seuls les paquets validés et signés sont installés."
+    }
   },
   "health": {
     "title": "Supervision système",

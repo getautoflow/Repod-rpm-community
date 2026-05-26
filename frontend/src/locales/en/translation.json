@@ -639,8 +639,44 @@
     "verifyConfig": "Verify configuration",
     "principle": "Principle",
     "neverAutoReboot": "Never auto-reboot",
+    "neverAutoRebootDesc": "on production servers. Schedule a maintenance window.",
     "testFirst": "Test first",
-    "monitorLogs": "Monitor logs"
+    "testFirstDesc": "on a staging server before promoting to the production distribution in the repository manager.",
+    "monitorLogs": "Monitor logs",
+    "automateConfig": "To automate configuration",
+    "networkReachPrefix": "The machine must be able to reach",
+    "networkReachSuffix": "on the internal network. No internet connection is required.",
+    "networkReachSuffixShort": "on the internal network.",
+    "dnf": {
+      "intro": "These steps connect the machine to the internal RPM repository via DNF/YUM (AlmaLinux, Rocky, CentOS, Oracle, Fedora). The GPG key guarantees the authenticity of signed packages.",
+      "step1": "Import the repository GPG key",
+      "step1Desc": "Registers the repository's public key in the machine's RPM database.",
+      "step2": "Create the .repo file",
+      "step2Desc": "Declares the internal repository as a DNF/YUM package source.",
+      "fileCreated": "File created:",
+      "step3": "Verify and refresh the package list",
+      "step4": "Install a package",
+      "step4Desc": "Once the repository is configured, installation proceeds normally."
+    },
+    "zypper": {
+      "intro": "These steps connect the machine to the internal RPM repository via Zypper (openSUSE Leap / Tumbleweed). The GPG key guarantees the authenticity of signed packages.",
+      "step1": "Import the repository GPG key",
+      "step2": "Add the repository with Zypper",
+      "step2Desc": "Registers the repository and enables GPG verification.",
+      "step3": "Refresh metadata",
+      "step4": "Install a package"
+    },
+    "isolation": {
+      "criticalStep": "Critical step — To be done after connecting to the internal repository",
+      "criticalStepDesc": "These commands disable public internet sources. Make sure the internal repository is correctly configured before running them.",
+      "step1": "Disable public sources",
+      "step2": "Block public repositories at the firewall level",
+      "step2Desc": "Double network protection even if a public repository is accidentally re-added.",
+      "step3": "Test isolation"
+    },
+    "autoUpdate": {
+      "principleDesc": "Automatic updates apply only packages from the internal repository, without internet access. Only validated and signed packages are installed."
+    }
   },
   "health": {
     "title": "System health",
