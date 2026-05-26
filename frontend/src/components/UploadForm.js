@@ -57,18 +57,18 @@ function IconServer({ className = "w-4 h-4" }) {
 }
 
 const STEP_META = {
-  reception:        { Icon: IconInbox,    label: "Réception du fichier" },
-  validation:       { Icon: IconShield,   label: "Pipeline de validation" },
-  sub_format:       { Icon: IconPackage,  label: "Format .rpm" },
-  sub_checksum:     { Icon: IconChecksum, label: "Intégrité SHA-256" },
-  sub_gpg:          { Icon: IconKey,      label: "Signature GPG" },
-  sub_clamav:       { Icon: IconVirus,    label: "Antivirus ClamAV" },
-  sub_cve:          { Icon: IconCVE,      label: "Analyse CVE" },
-  sub_dependencies: { Icon: IconLink,     label: "Dépendances" },
-  pool:             { Icon: IconPackage,  label: "Déplacement vers le pool" },
-  manifest:         { Icon: IconTag,      label: "Génération du manifest" },
-  index:            { Icon: IconIndex,    label: "Mise à jour de l'index" },
-  createrepo:       { Icon: IconServer,   label: "Ajout au dépôt RPM (createrepo_c)" },
+  reception:        { Icon: IconInbox,    stepKey: "receive" },
+  validation:       { Icon: IconShield,   stepKey: "pipeline" },
+  sub_format:       { Icon: IconPackage,  stepKey: "format" },
+  sub_checksum:     { Icon: IconChecksum, stepKey: "integrity" },
+  sub_gpg:          { Icon: IconKey,      stepKey: "signature" },
+  sub_clamav:       { Icon: IconVirus,    stepKey: "antivirus" },
+  sub_cve:          { Icon: IconCVE,      stepKey: "cveAnalysis" },
+  sub_dependencies: { Icon: IconLink,     stepKey: "dependencies" },
+  pool:             { Icon: IconPackage,  stepKey: "pool" },
+  manifest:         { Icon: IconTag,      stepKey: "manifest" },
+  index:            { Icon: IconIndex,    stepKey: "index" },
+  createrepo:       { Icon: IconServer,   stepKey: "repo" },
 };
 
 // ─── Step status icon ─────────────────────────────────────────────────────────
@@ -82,6 +82,7 @@ function StepStatusIcon({ status }) {
 }
 
 function WorkflowStep({ step }) {
+  const { t } = useTranslation();
   const meta = STEP_META[step.name] || {};
   const isSub = step.name?.startsWith("sub_");
   const StepSvgIcon = meta.Icon;
@@ -114,7 +115,7 @@ function WorkflowStep({ step }) {
         <div className="flex items-center gap-1.5">
           {StepSvgIcon && <StepSvgIcon className={`w-3.5 h-3.5 flex-shrink-0 ${iconColor}`} />}
           <span className={`text-sm font-medium ${labelClass}`}>
-            {step.label || meta.label || step.name}
+            {step.label || (meta.stepKey ? t(`upload.steps.${meta.stepKey}`) : step.name)}
           </span>
         </div>
         {step.message && <p className="text-xs text-gray-500 mt-0.5 truncate">{step.message}</p>}
