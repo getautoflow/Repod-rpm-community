@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 /**
  * HelpTooltip — icône info circulaire avec bulle contextuelle au survol.
@@ -8,6 +9,7 @@ import { useState, useRef, useEffect } from "react";
  *   <HelpTooltip text="..." position="right" />
  */
 export default function HelpTooltip({ text, position = "top", className = "" }) {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
   const ref = useRef(null);
 
@@ -41,7 +43,7 @@ export default function HelpTooltip({ text, position = "top", className = "" }) 
         onMouseLeave={() => setVisible(false)}
         onClick={() => setVisible(v => !v)}
         className="w-4 h-4 text-slate-400 hover:text-slate-600 transition-colors cursor-help"
-        aria-label="Aide contextuelle"
+        aria-label={t('help.contextual')}
       >
         {/* Icône info-circle */}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}
