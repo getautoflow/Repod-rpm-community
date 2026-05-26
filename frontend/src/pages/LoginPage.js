@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { login, requestPasswordReset, mfaAuthenticate, getOidcPublicConfig, oidcAuthorize } from "../api";
 import { useAuth } from "../context/AuthContext";
+import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "../components/LanguageSwitcher";
 
 export default function LoginPage() {
   const [username, setUsername]     = useState("");
@@ -17,27 +19,27 @@ export default function LoginPage() {
   const [ssoLoading, setSsoLoading] = useState(false);
   const { signIn } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
-  // Charger la config OIDC publique au montage (sans auth)
+  // Load public OIDC config on mount (no auth required)
   useEffect(() => {
     getOidcPublicConfig()
       .then((cfg) => setOidcConfig(cfg))
-      .catch(() => { /* OIDC non configuré — ignorer silencieusement */ });
+      .catch(() => { /* OIDC not configured — ignore silently */ });
   }, []);
 
-  // ── Connexion ──────────────────────────────────────────────────────────────
+  // ── Login ──────────────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     if (!username || !password) {
-      setError("Veuillez remplir tous les champs.");
+      setError(t('auth.errors.fillAllFields'));
       return;
     }
     setLoading(true);
     try {
       const { data } = await login(username, password);
       if (data.mfa_required && data.mfa_token) {
-        // Étape 1 réussie — le MFA est requis
         setMfaToken(data.mfa_token);
       } else {
         signIn(data.access_token);
@@ -46,23 +48,23 @@ export default function LoginPage() {
     } catch (err) {
       const status = err?.response?.status;
       if (status === 401) {
-        setError("Identifiant ou mot de passe incorrect.");
+        setError(t('auth.errors.invalidCredentials'));
       } else if (status === 429) {
-        setError("Trop de tentatives. Réessayez dans quelques minutes.");
+        setError(t('auth.errors.tooManyAttempts'));
       } else {
-        setError("Impossible de contacter le serveur. Vérifiez votre connexion.");
+        setError(t('auth.errors.cannotContactServer'));
       }
     } finally {
       setLoading(false);
     }
   };
 
-  // ── Validation TOTP (étape 2) ──────────────────────────────────────────────
+  // ── TOTP verification (step 2) ─────────────────────────────────────────
   const handleMfaSubmit = async (e) => {
     e.preventDefault();
     setError("");
     if (!totpCode || totpCode.length !== 6) {
-      setError("Entrez le code à 6 chiffres de votre application.");
+      setError(t('auth.errors.mfaCodeRequired'));
       return;
     }
     setLoading(true);
@@ -73,11 +75,11 @@ export default function LoginPage() {
     } catch (err) {
       const status = err?.response?.status;
       if (status === 401) {
-        setError("Code TOTP invalide ou expiré. Réessayez.");
+        setError(t('auth.errors.mfaInvalid'));
       } else if (status === 429) {
-        setError("Trop de tentatives. Réessayez dans quelques minutes.");
+        setError(t('auth.errors.tooManyAttempts'));
       } else {
-        setError("Impossible de contacter le serveur.");
+        setError(t('auth.errors.cannotContactServerSimple'));
       }
       setTotpCode("");
     } finally {
@@ -85,67 +87,67 @@ export default function LoginPage() {
     }
   };
 
-  // ── Connexion SSO via PKCE ─────────────────────────────────────────────────
+  // ── SSO login via PKCE ────────────────────────────────────────────────
   const handleSsoLogin = async () => {
     setSsoLoading(true);
     setError("");
     try {
-      // 1. Générer code_verifier : 96 octets aléatoires → base64url (sans padding)
       const verifierBytes = new Uint8Array(96);
       crypto.getRandomValues(verifierBytes);
       const codeVerifier = btoa(String.fromCharCode(...verifierBytes))
         .replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
 
-      // 2. code_challenge = SHA-256(code_verifier) → base64url
       const encoded     = new TextEncoder().encode(codeVerifier);
       const hashBuf     = await crypto.subtle.digest("SHA-256", encoded);
       const codeChallenge = btoa(String.fromCharCode(...new Uint8Array(hashBuf)))
         .replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
 
-      // 3. state anti-CSRF : 32 octets aléatoires → hex
       const stateBytes = new Uint8Array(32);
       crypto.getRandomValues(stateBytes);
       const state = Array.from(stateBytes).map((b) => b.toString(16).padStart(2, "0")).join("");
 
       const redirectUri = `${window.location.origin}/oidc-callback`;
 
-      // 4. Persister en sessionStorage pour la page de callback
       sessionStorage.setItem("oidc_state",         state);
       sessionStorage.setItem("oidc_code_verifier", codeVerifier);
       sessionStorage.setItem("oidc_redirect_uri",  redirectUri);
 
-      // 5. Obtenir l'URL d'autorisation de l'IdP et rediriger
       const { authorization_url } = await oidcAuthorize(codeChallenge, state, redirectUri);
       window.location.href = authorization_url;
     } catch {
-      setError("Impossible de démarrer la connexion SSO. Vérifiez la configuration.");
+      setError(t('auth.errors.ssoFailed'));
       setSsoLoading(false);
     }
   };
 
-  // ── Écran MFA (étape 2) ─────────────────────────────────────────────────────
+  // ── MFA screen (step 2) ───────────────────────────────────────────────
   if (mfaToken) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-gray-800">
+        {/* Language switcher — top-right, absolutely positioned */}
+        <div className="absolute top-4 right-4">
+          <LanguageSwitcher />
+        </div>
+
         <div className="w-full max-w-sm">
           <div className="bg-white rounded-2xl shadow-2xl p-8">
-            {/* En-tête */}
+            {/* Header */}
             <div className="text-center mb-6">
               <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-100 rounded-full mb-4">
                 <svg className="w-7 h-7 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
               </div>
-              <h2 className="text-xl font-bold text-gray-900">Vérification en deux étapes</h2>
+              <h2 className="text-xl font-bold text-gray-900">{t('auth.mfaScreenTitle')}</h2>
               <p className="text-sm text-gray-500 mt-1">
-                Entrez le code à 6 chiffres de votre application authenticator.
+                {t('auth.mfaScreenSubtitle')}
               </p>
             </div>
 
             <form onSubmit={handleMfaSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2 text-center">
-                  Code TOTP
+                  {t('auth.totpCodeLabel')}
                 </label>
                 <input
                   type="text"
@@ -189,9 +191,9 @@ export default function LoginPage() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
                     </svg>
-                    Vérification…
+                    {t('auth.verifying')}
                   </span>
-                ) : "Vérifier"}
+                ) : t('auth.verifyButton')}
               </button>
             </form>
 
@@ -200,7 +202,7 @@ export default function LoginPage() {
                 onClick={() => { setMfaToken(""); setTotpCode(""); setError(""); }}
                 className="text-sm text-gray-500 hover:text-gray-700 hover:underline"
               >
-                ← Retour à la connexion
+                {t('auth.backToLogin')}
               </button>
             </div>
           </div>
@@ -209,12 +211,17 @@ export default function LoginPage() {
     );
   }
 
-  // ── Écran principal (étape 1) ────────────────────────────────────────────────
+  // ── Main screen (step 1) ──────────────────────────────────────────────
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-gray-800">
+      {/* Language switcher — top-right, absolutely positioned */}
+      <div className="absolute top-4 right-4">
+        <LanguageSwitcher />
+      </div>
+
       <div className="w-full max-w-sm space-y-3">
 
-        {/* Carte principale */}
+        {/* Main card */}
         <div className="bg-white rounded-2xl shadow-2xl p-8">
           {/* Logo */}
           <div className="text-center mb-8">
@@ -222,13 +229,13 @@ export default function LoginPage() {
               <img src="/logo.png" alt="Repod" className="w-16 h-16 object-contain" />
             </div>
             <h1 className="text-2xl font-black tracking-wider text-gray-900 uppercase">Repod</h1>
-            <p className="text-sm text-gray-500 mt-1">Connectez-vous pour continuer</p>
+            <p className="text-sm text-gray-500 mt-1">{t('auth.loginTitle')}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Utilisateur
+                {t('auth.username')}
               </label>
               <input
                 type="text"
@@ -245,7 +252,7 @@ export default function LoginPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Mot de passe
+                {t('auth.password')}
               </label>
               <div className="relative">
                 <input
@@ -263,7 +270,7 @@ export default function LoginPage() {
                   onClick={() => setShowPassword((v) => !v)}
                   className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600 transition-colors"
                   tabIndex={-1}
-                  aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                  aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                 >
                   {showPassword ? (
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -279,7 +286,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Erreur inline — toujours visible, ne disparaît pas */}
+            {/* Inline error */}
             {error && (
               <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2.5">
                 <svg className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -302,23 +309,23 @@ export default function LoginPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
                   </svg>
-                  Connexion…
+                  {t('auth.loggingIn')}
                 </span>
-              ) : "Se connecter"}
+              ) : t('auth.loginButton')}
             </button>
           </form>
 
-          {/* Lien mot de passe oublié */}
+          {/* Forgot password link */}
           <div className="mt-4 text-center">
             <button
               onClick={() => { setShowForgot(!showForgot); setError(""); }}
               className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
             >
-              Mot de passe oublié ?
+              {t('auth.forgotPassword')}
             </button>
           </div>
 
-          {/* Bouton SSO — affiché uniquement si OIDC est activé côté serveur */}
+          {/* SSO button — shown only if OIDC is enabled server-side */}
           {oidcConfig?.enabled && (
             <>
               <div className="relative my-3">
@@ -326,7 +333,7 @@ export default function LoginPage() {
                   <div className="w-full border-t border-gray-200" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="px-3 bg-white text-gray-400 font-medium tracking-wider">ou</span>
+                  <span className="px-3 bg-white text-gray-400 font-medium tracking-wider">{t('auth.orSeparator')}</span>
                 </div>
               </div>
               <button
@@ -344,7 +351,7 @@ export default function LoginPage() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
                     </svg>
-                    Redirection vers {oidcConfig.provider_name}…
+                    {t('auth.ssoRedirecting', { provider: oidcConfig.provider_name })}
                   </>
                 ) : (
                   <>
@@ -352,7 +359,7 @@ export default function LoginPage() {
                          stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
                       <path d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
                     </svg>
-                    Se connecter avec {oidcConfig.provider_name}
+                    {t('auth.ssoButton', { provider: oidcConfig.provider_name })}
                   </>
                 )}
               </button>
@@ -360,7 +367,7 @@ export default function LoginPage() {
           )}
         </div>
 
-        {/* Panneau de réinitialisation (accordéon) */}
+        {/* Reset password panel (accordion) */}
         {showForgot && (
           <ForgotPasswordPanel onClose={() => setShowForgot(false)} />
         )}
@@ -370,11 +377,12 @@ export default function LoginPage() {
 }
 
 
-// ── Formulaire de demande de reset ────────────────────────────────────────────
+// ── Forgot password form ─────────────────────────────────────────────────────
 function ForgotPasswordPanel({ onClose }) {
   const [username, setUsername] = useState("");
   const [loading, setLoading]   = useState(false);
   const [sent, setSent]         = useState(false);
+  const { t } = useTranslation();
 
   const handleRequest = async (e) => {
     e.preventDefault();
@@ -384,8 +392,7 @@ function ForgotPasswordPanel({ onClose }) {
       await requestPasswordReset(username.trim());
       setSent(true);
     } catch {
-      // L'API renvoie toujours 200 — une erreur ici = problème réseau
-      toast.error("Impossible de contacter le serveur.");
+      toast.error(t('auth.errors.cannotContactServerSimple'));
     } finally {
       setLoading(false);
     }
@@ -400,33 +407,30 @@ function ForgotPasswordPanel({ onClose }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/>
             </svg>
           </div>
-          <p className="text-sm font-medium text-gray-800">Demande envoyée</p>
-          <p className="text-xs text-gray-500">
-            Si ce compte existe et dispose d'un email, un lien de réinitialisation
-            a été envoyé. Il est valable <strong>30 minutes</strong>.
-          </p>
+          <p className="text-sm font-medium text-gray-800">{t('auth.resetSent')}</p>
+          <p className="text-xs text-gray-500"
+            dangerouslySetInnerHTML={{ __html: t('auth.forgotSent') }} />
           <button
             onClick={onClose}
             className="text-sm text-blue-600 hover:underline"
           >
-            Retour à la connexion
+            {t('auth.backToLogin')}
           </button>
         </div>
       ) : (
         <>
           <h3 className="text-sm font-semibold text-gray-800 mb-1">
-            Réinitialiser le mot de passe
+            {t('auth.resetPassword')}
           </h3>
           <p className="text-xs text-gray-500 mb-4">
-            Entrez votre nom d'utilisateur. Si un email est associé à ce compte,
-            vous recevrez un lien de réinitialisation.
+            {t('auth.forgotDescription')}
           </p>
           <form onSubmit={handleRequest} className="space-y-3">
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="Nom d'utilisateur"
+              placeholder={t('auth.forgotPlaceholder')}
               autoFocus
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm
                          focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -438,7 +442,7 @@ function ForgotPasswordPanel({ onClose }) {
                 className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50
                            text-white text-sm font-medium py-2 rounded-lg transition-colors"
               >
-                {loading ? "Envoi…" : "Envoyer le lien"}
+                {loading ? t('auth.sending') : t('auth.sendResetLink')}
               </button>
               <button
                 type="button"
@@ -446,22 +450,22 @@ function ForgotPasswordPanel({ onClose }) {
                 className="px-3 py-2 border border-gray-300 rounded-lg text-sm
                            text-gray-600 hover:bg-gray-50 transition-colors"
               >
-                Annuler
+                {t('common.cancel')}
               </button>
             </div>
           </form>
 
-          {/* Fallback CLI pour les admins sans email */}
+          {/* CLI fallback for admins without email */}
           <details className="mt-4">
             <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-600 select-none">
-              Pas d'email configuré ? (accès CLI)
+              {t('auth.forgotNoEmail')}
             </summary>
             <div className="mt-2 bg-gray-50 rounded-lg p-3 font-mono text-xs text-gray-600 leading-relaxed">
-              <p className="text-gray-400 mb-1"># Depuis le serveur :</p>
+              <p className="text-gray-400 mb-1"># {t('auth.cliHint')}</p>
               <p className="break-all">
                 docker exec backend-api python3 -c
                 <br />"from auth.users import change_password;
-                <br />change_password('admin', 'NouveauMotDePasse')"
+                <br />change_password('admin', 'NewPassword')"
               </p>
             </div>
           </details>

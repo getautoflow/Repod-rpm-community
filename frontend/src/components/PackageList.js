@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import { listArtifacts, deleteArtifact, syncIndex, getArtifact, resolveDependencies, getApiBaseUrl, getPackageCve, getPackageDecision, getAuditLogs } from "../api";
 import Paginator from "./Paginator";
@@ -11,20 +12,6 @@ function formatBytes(bytes) {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / 1048576).toFixed(1)} MB`;
-}
-
-function formatDate(iso) {
-  if (!iso) return "–";
-  return new Date(iso).toLocaleDateString("fr-FR", {
-    day: "2-digit", month: "short", year: "numeric",
-  });
-}
-
-function copyToClipboard(text) {
-  navigator.clipboard.writeText(text).then(
-    () => toast.success("Commande copiée"),
-    () => toast.error("Impossible de copier")
-  );
 }
 
 function CveBadge({ cve }) {
@@ -95,14 +82,14 @@ function LogLine({ line }) {
   );
 }
 
-// ─── Log box animée ──────────────────────────────────────────────────────────
+// ─── Animated log box ────────────────────────────────────────────────────────
 
-function RunningLogBox({ logs, running, logsRef }) {
+function RunningLogBox({ logs, running, logsRef, label }) {
   const elapsed = useElapsed(running);
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Progression</h3>
+        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{label}</h3>
         {running && (
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-400 font-mono">{fmtElapsed(elapsed)}</span>
@@ -127,9 +114,10 @@ function RunningLogBox({ logs, running, logsRef }) {
   );
 }
 
-// ─── Panel : Résoudre les dépendances manquantes ──────────────────────────────
+// ─── Panel: Resolve missing dependencies ─────────────────────────────────────
 
 function ResolvePanel({ pkg, onClose, onResolved }) {
+  const { t } = useTranslation();
   const [logs, setLogs] = useState([]);
   const [running, setRunning] = useState(false);
   const [done, setDone] = useState(false);
@@ -149,7 +137,7 @@ function ResolvePanel({ pkg, onClose, onResolved }) {
 
   const handleImport = async () => {
     if (missing.length === 0) return;
-    setLogs([`info|Import de ${missing.length} dépendance(s) manquante(s)…`]);
+    setLogs([`info|${t('packages.resolve.importingDeps', { count: missing.length })}`]);
     setDone(false);
     setHasError(false);
     setRunning(true);
@@ -167,7 +155,7 @@ function ResolvePanel({ pkg, onClose, onResolved }) {
       });
       const data = await resp.json().catch(() => ({}));
       if (!resp.ok) {
-        setLogs((prev) => [...prev, `error|${data.detail || "Erreur serveur"}`]);
+        setLogs((prev) => [...prev, `error|${data.detail || t('packages.resolve.serverError')}`]);
         setHasError(true);
       } else {
         for (const r of data.results || []) {
@@ -176,9 +164,9 @@ function ResolvePanel({ pkg, onClose, onResolved }) {
             : r.package;
           if (r.status === "ok") {
             if (r.imported === 0) {
-              setLogs((prev) => [...prev, `skip|  ✓ ${label} déjà présent`]);
+              setLogs((prev) => [...prev, `skip|  ✓ ${label} ${t('packages.resolve.alreadyPresent')}`]);
             } else {
-              setLogs((prev) => [...prev, `success|  ✓ ${label} importé`]);
+              setLogs((prev) => [...prev, `success|  ✓ ${label} ${t('packages.resolve.imported')}`]);
             }
           } else {
             setLogs((prev) => [...prev, `error|  ✗ ${label} — ${r.error}`]);
@@ -187,7 +175,7 @@ function ResolvePanel({ pkg, onClose, onResolved }) {
         }
         setLogs((prev) => [
           ...prev,
-          `done|Terminé — ${data.imported ?? 0} importé(s), ${data.errors ?? 0} erreur(s)`,
+          `done|${t('packages.resolve.done', { imported: data.imported ?? 0, errors: data.errors ?? 0 })}`,
         ]);
       }
     } catch (e) {
@@ -204,7 +192,7 @@ function ResolvePanel({ pkg, onClose, onResolved }) {
       <div className="fixed inset-0 z-40 bg-black/30" onClick={!running ? onClose : undefined} />
       <div className="fixed inset-y-0 right-0 z-50 w-full max-w-lg bg-white shadow-2xl flex flex-col overflow-hidden">
 
-        {/* En-tête */}
+        {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-amber-100 rounded-lg flex items-center justify-center">
@@ -214,7 +202,7 @@ function ResolvePanel({ pkg, onClose, onResolved }) {
               </svg>
             </div>
             <div>
-              <h2 className="font-semibold text-gray-900">Résoudre les dépendances</h2>
+              <h2 className="font-semibold text-gray-900">{t('packages.resolve.title')}</h2>
               <p className="text-xs text-gray-400 font-mono">{pkg.name}</p>
             </div>
           </div>
@@ -228,20 +216,20 @@ function ResolvePanel({ pkg, onClose, onResolved }) {
 
         <div className="flex-1 overflow-y-auto p-6 space-y-5">
 
-          {/* Bannière */}
+          {/* Banner */}
           <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
             <p className="text-sm font-semibold text-amber-800">
-              {missing.length} dépendance(s) manquante(s) dans le dépôt
+              {t('packages.resolve.missingCount', { count: missing.length })}
             </p>
             <p className="text-xs text-amber-600 mt-0.5">
-              Ces paquets sont requis par <span className="font-mono font-semibold">{pkg.name}</span> mais absents du dépôt.
+              {t('packages.resolve.missingDesc', { name: pkg.name })}
             </p>
           </div>
 
-          {/* Liste des deps manquantes */}
+          {/* Missing deps list */}
           <div>
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-              Dépendances à importer
+              {t('packages.resolve.depsToImport')}
             </h3>
             <div className="border border-gray-200 rounded-xl overflow-hidden">
               <ul className="divide-y divide-gray-100">
@@ -253,14 +241,14 @@ function ResolvePanel({ pkg, onClose, onResolved }) {
                       </svg>
                     </div>
                     <span className="font-mono text-sm text-gray-800">{dep}</span>
-                    <span className="ml-auto text-xs text-red-500 font-medium">Manquant</span>
+                    <span className="ml-auto text-xs text-red-500 font-medium">{t('packages.resolve.missingLabel')}</span>
                   </li>
                 ))}
               </ul>
             </div>
           </div>
 
-          {/* Bouton d'import */}
+          {/* Import button */}
           {!done && (
             <button
               onClick={handleImport}
@@ -274,7 +262,7 @@ function ResolvePanel({ pkg, onClose, onResolved }) {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                       d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                   </svg>
-                  Import en cours...
+                  {t('packages.resolve.importing')}
                 </>
               ) : (
                 <>
@@ -282,7 +270,7 @@ function ResolvePanel({ pkg, onClose, onResolved }) {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                       d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
                   </svg>
-                  Importer automatiquement ({missing.length} paquet{missing.length > 1 ? "s" : ""})
+                  {t('packages.resolve.importButton', { count: missing.length })}
                 </>
               )}
             </button>
@@ -293,7 +281,7 @@ function ResolvePanel({ pkg, onClose, onResolved }) {
               <svg className="w-5 h-5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              <p className="text-sm font-semibold text-green-800">Import terminé — mise à jour en cours…</p>
+              <p className="text-sm font-semibold text-green-800">{t('packages.resolve.importDone')}</p>
             </div>
           )}
           {done && hasError && (
@@ -303,32 +291,28 @@ function ResolvePanel({ pkg, onClose, onResolved }) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
                 <div>
-                  <p className="text-sm font-semibold text-red-800">Certains paquets n'ont pas pu être importés.</p>
-                  <p className="text-xs text-red-600 mt-0.5">
-                    Si les erreurs indiquent "introuvable dans l'index", allez dans{" "}
-                    <strong>Importer → Synchronisation</strong> et relancez une synchronisation complète des sources RPM.
-                  </p>
+                  <p className="text-sm font-semibold text-red-800">{t('packages.resolve.importPartial')}</p>
+                  <p className="text-xs text-red-600 mt-0.5">{t('packages.resolve.importPartialHint')}</p>
                 </div>
               </div>
               <button
                 onClick={() => onResolved(true)}
                 className="w-full py-2 text-sm font-medium text-red-700 border border-red-300 rounded-lg hover:bg-red-100 transition-colors"
               >
-                Fermer
+                {t('packages.resolve.close')}
               </button>
             </div>
           )}
 
           {/* Logs */}
           {logs.length > 0 && (
-            <RunningLogBox logs={logs} running={running} logsRef={logsRef} />
+            <RunningLogBox logs={logs} running={running} logsRef={logsRef} label={t('packages.resolve.progressLabel')} />
           )}
 
-          {/* Avertissement index */}
+          {/* Index hint */}
           {!running && logs.length === 0 && (
             <p className="text-xs text-gray-400 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5">
-              Les paquets seront téléchargés depuis l'index RPM synchronisé.
-              Si l'index n'est pas à jour, allez dans <strong>Importer → Synchronisation</strong>.
+              {t('packages.resolve.syncHint')}
             </p>
           )}
         </div>
@@ -337,14 +321,30 @@ function ResolvePanel({ pkg, onClose, onResolved }) {
   );
 }
 
-// ─── Panneau de détail / inspection ──────────────────────────────────────────
+// ─── Inspect panel ────────────────────────────────────────────────────────────
 
 const SEV_COLOR = { critical:"#DC2626", high:"#EA580C", medium:"#CA8A04", low:"#16A34A", negligible:"#94A3B8" };
 const SEV_BG    = { critical:"#FEF2F2", high:"#FFF7ED", medium:"#FEFCE8", low:"#F0FDF4", negligible:"#F8FAFC" };
 const DECISION_COLOR = { accept_risk:"#16A34A", exception:"#2563EB", reject:"#DC2626", upgrade_required:"#0891B2" };
-const DECISION_LABEL = { accept_risk:"Risque accepté", exception:"Exception", reject:"Rejeté", upgrade_required:"Upgrade requis" };
 
 function InspectPanel({ pkg, onClose }) {
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language?.startsWith('fr') ? 'fr-FR' : 'en-GB';
+
+  const formatDate = (iso) => {
+    if (!iso) return "–";
+    return new Date(iso).toLocaleDateString(dateLocale, {
+      day: "2-digit", month: "short", year: "numeric",
+    });
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text).then(
+      () => toast.success(t('packages.copied')),
+      () => toast.error(t('packages.copyError'))
+    );
+  };
+
   const [tab, setTab]         = useState("info");
   const [detail, setDetail]   = useState(null);
   const [deps, setDeps]       = useState(null);
@@ -381,11 +381,39 @@ function InspectPanel({ pkg, onClose }) {
   const cveList         = cve?.cve_results ?? cve?.vulnerabilities ?? [];
   const cveSummary      = cve?.summary ?? {};
 
+  const DECISION_LABEL = {
+    accept_risk: t('packages.inspect.decisionLabels.accept_risk'),
+    exception: t('packages.inspect.decisionLabels.exception'),
+    reject: t('packages.inspect.decisionLabels.reject'),
+    upgrade_required: t('packages.inspect.decisionLabels.upgrade_required'),
+  };
+
   const TABS = [
-    { id: "info",     label: "Informations" },
-    { id: "cve",      label: `CVE ${cveList.length > 0 ? `(${cveList.length})` : ""}` },
-    { id: "decision", label: "Décision RSSI" },
-    { id: "history",  label: `Historique ${auditHistory.length > 0 ? `(${auditHistory.length})` : ""}` },
+    { id: "info",     label: t('packages.inspect.tabs.info') },
+    { id: "cve",      label: `${t('packages.inspect.tabs.cve')} ${cveList.length > 0 ? `(${cveList.length})` : ""}` },
+    { id: "decision", label: t('packages.inspect.tabs.decision') },
+    { id: "history",  label: `${t('packages.inspect.tabs.history')} ${auditHistory.length > 0 ? `(${auditHistory.length})` : ""}` },
+  ];
+
+  const validationLabels = {
+    format: t('packages.inspect.validationLabels.format'),
+    provenance: t('packages.inspect.validationLabels.provenance'),
+    antivirus: t('packages.inspect.validationLabels.antivirus'),
+    gpg: t('packages.inspect.validationLabels.gpg'),
+    checksum: t('packages.inspect.validationLabels.checksum'),
+    dependencies: t('packages.inspect.validationLabels.dependencies'),
+  };
+
+  const metaFields = [
+    { label: t('packages.inspect.fields.name'),         value: pkg.name },
+    { label: t('packages.inspect.fields.version'),      value: pkg.latest_version || "–" },
+    { label: t('packages.inspect.fields.architecture'), value: pkg.arch || "–" },
+    { label: t('packages.inspect.fields.distribution'), value: pkg.distribution || "–" },
+    { label: t('packages.inspect.fields.size'),         value: formatBytes(pkg.size_bytes) },
+    { label: t('packages.inspect.fields.section'),      value: pkg.section || "–" },
+    { label: t('packages.inspect.fields.importedOn'),   value: formatDate(pkg.imported_at) },
+    { label: t('packages.inspect.fields.importedBy'),   value: pkg.imported_by || "–" },
+    { label: t('packages.inspect.fields.method'),       value: pkg.import_method || "–" },
   ];
 
   return (
@@ -417,24 +445,24 @@ function InspectPanel({ pkg, onClose }) {
 
         {/* Tabs */}
         <div className="flex border-b border-gray-200 px-6 shrink-0 bg-gray-50">
-          {TABS.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)}
+          {TABS.map(tab => (
+            <button key={tab.id} onClick={() => setTab(tab.id)}
               className={`px-4 py-3 text-xs font-semibold border-b-2 transition-colors ${
-                tab === t.id
+                tab.id === tab.id
                   ? "border-blue-600 text-blue-600"
                   : "border-transparent text-gray-500 hover:text-gray-700"
               }`}>
-              {t.label}
+              {tab.label}
             </button>
           ))}
         </div>
 
         {loading ? (
-          <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">Chargement...</div>
+          <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">{t('common.loading')}</div>
         ) : (
           <div className="flex-1 overflow-y-auto">
 
-            {/* ── Onglet : Informations ── */}
+            {/* Info tab */}
             {tab === "info" && (
               <>
                 <div className={`mx-4 mt-4 rounded-xl px-4 py-3 flex items-center gap-3 ${
@@ -442,26 +470,16 @@ function InspectPanel({ pkg, onClose }) {
                 }`}>
                   <div>
                     <p className={`text-sm font-semibold ${satisfied ? "text-green-800" : "text-amber-800"}`}>
-                      {satisfied ? "Toutes les dépendances sont présentes" : `${missing.length} dépendance(s) manquante(s)`}
+                      {satisfied ? t('packages.inspect.allDepsPresent') : t('packages.inspect.missingDeps', { count: missing.length })}
                     </p>
                     {!satisfied && <p className="text-xs text-amber-700 mt-0.5 font-mono">{missing.join(", ")}</p>}
                   </div>
                 </div>
 
                 <section className="px-4 mt-5">
-                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Métadonnées</h3>
+                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{t('packages.inspect.metadata')}</h3>
                   <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
-                    {[
-                      { label: "Nom",          value: pkg.name },
-                      { label: "Version",      value: pkg.latest_version || "–" },
-                      { label: "Architecture", value: pkg.arch || "–" },
-                      { label: "Distribution", value: pkg.distribution || "–" },
-                      { label: "Taille",       value: formatBytes(pkg.size_bytes) },
-                      { label: "Section",      value: pkg.section || "–" },
-                      { label: "Importé le",   value: formatDate(pkg.imported_at) },
-                      { label: "Importé par",  value: pkg.imported_by || "–" },
-                      { label: "Méthode",      value: pkg.import_method || "–" },
-                    ].map(({ label, value }) => (
+                    {metaFields.map(({ label, value }) => (
                       <div key={label} className="flex items-center px-4 py-2.5 gap-4">
                         <span className="text-xs text-gray-500 w-28 shrink-0">{label}</span>
                         <span className="text-sm text-gray-800 font-mono truncate">{value}</span>
@@ -469,7 +487,7 @@ function InspectPanel({ pkg, onClose }) {
                     ))}
                     {pkg.description && (
                       <div className="flex items-start px-4 py-2.5 gap-4">
-                        <span className="text-xs text-gray-500 w-28 shrink-0 mt-0.5">Description</span>
+                        <span className="text-xs text-gray-500 w-28 shrink-0 mt-0.5">{t('packages.inspect.fields.description')}</span>
                         <span className="text-sm text-gray-800">{pkg.description}</span>
                       </div>
                     )}
@@ -478,13 +496,13 @@ function InspectPanel({ pkg, onClose }) {
 
                 {verInfo?.sha256 && (
                   <section className="px-4 mt-5">
-                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Intégrité</h3>
+                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{t('packages.inspect.integrity')}</h3>
                     <div className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex items-start gap-3">
                       <div className="min-w-0 flex-1">
                         <p className="text-xs text-gray-500 mb-0.5">SHA-256</p>
                         <p className="text-xs font-mono text-gray-700 break-all">{verInfo.sha256}</p>
                       </div>
-                      <button onClick={() => copyToClipboard(verInfo.sha256)} className="shrink-0 p-1 text-gray-400 hover:text-gray-600" title="Copier">
+                      <button onClick={() => copyToClipboard(verInfo.sha256)} className="shrink-0 p-1 text-gray-400 hover:text-gray-600" title={t('common.copy')}>
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                         </svg>
@@ -495,19 +513,18 @@ function InspectPanel({ pkg, onClose }) {
 
                 {validationSteps.length > 0 && (
                   <section className="px-4 mt-5 mb-6">
-                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Validation à l'import</h3>
+                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{t('packages.inspect.validation')}</h3>
                     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                       <ul className="divide-y divide-gray-100">
                         {validationSteps.map((step, i) => {
                           const isWarning = step.warning && !step.passed;
-                          const labels = { format:"Format .rpm", provenance:"Provenance SHA256", antivirus:"Antivirus ClamAV", gpg:"Signature GPG", checksum:"Checksum", dependencies:"Dépendances" };
                           return (
                             <li key={i} className={`flex items-start gap-3 px-4 py-3 ${!step.passed && !isWarning ? "bg-red-50/50" : isWarning ? "bg-amber-50/50" : ""}`}>
                               <svg className={`w-4 h-4 shrink-0 mt-0.5 ${step.passed || isWarning ? isWarning ? "text-amber-500" : "text-green-500" : "text-red-500"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 {step.passed ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /> : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />}
                               </svg>
                               <div className="min-w-0 flex-1">
-                                <p className="text-xs font-semibold text-gray-700">{labels[step.name] || step.name}</p>
+                                <p className="text-xs font-semibold text-gray-700">{validationLabels[step.name] || step.name}</p>
                                 <p className="text-xs text-gray-500 mt-0.5">{step.message}</p>
                               </div>
                             </li>
@@ -520,11 +537,15 @@ function InspectPanel({ pkg, onClose }) {
 
                 <section className="px-4 mt-5 mb-6">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Dépendances</h3>
-                    <span className="text-xs text-gray-400">{allDeps.length === 0 ? "Aucune" : `${allDeps.length - missing.length}/${allDeps.length} disponibles`}</span>
+                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('packages.inspect.deps')}</h3>
+                    <span className="text-xs text-gray-400">
+                      {allDeps.length === 0
+                        ? t('packages.inspect.noDepsLabel')
+                        : t('packages.inspect.depsAvailable', { present: allDeps.length - missing.length, total: allDeps.length })}
+                    </span>
                   </div>
                   {allDeps.length === 0 ? (
-                    <div className="bg-white border border-gray-200 rounded-xl px-4 py-6 text-center text-sm text-gray-400">Aucune dépendance déclarée</div>
+                    <div className="bg-white border border-gray-200 rounded-xl px-4 py-6 text-center text-sm text-gray-400">{t('packages.inspect.noDepsDecl')}</div>
                   ) : (
                     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                       <ul className="divide-y divide-gray-100">
@@ -543,7 +564,9 @@ function InspectPanel({ pkg, onClose }) {
                                   {dep.version_constraint && <p className="text-xs text-gray-400">{dep.version_constraint}</p>}
                                 </div>
                               </div>
-                              <span className={`text-xs font-medium shrink-0 ml-3 ${present ? "text-green-600" : "text-red-500"}`}>{present ? "Dans le dépôt" : "Manquante"}</span>
+                              <span className={`text-xs font-medium shrink-0 ml-3 ${present ? "text-green-600" : "text-red-500"}`}>
+                                {present ? t('packages.inspect.inRepo') : t('packages.inspect.missing')}
+                              </span>
                             </li>
                           );
                         })}
@@ -554,10 +577,9 @@ function InspectPanel({ pkg, onClose }) {
               </>
             )}
 
-            {/* ── Onglet : CVE ── */}
+            {/* CVE tab */}
             {tab === "cve" && (
               <section className="px-4 py-5">
-                {/* Résumé */}
                 {Object.keys(cveSummary).length > 0 && (
                   <div className="flex gap-2 mb-4 flex-wrap">
                     {["critical","high","medium","low","negligible"].map(sev => cveSummary[sev] > 0 && (
@@ -571,8 +593,8 @@ function InspectPanel({ pkg, onClose }) {
 
                 {cveList.length === 0 ? (
                   <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-8 text-center">
-                    <p className="text-green-700 font-semibold text-sm">Aucune CVE détectée</p>
-                    <p className="text-green-600 text-xs mt-1">Ce paquet est propre selon Grype</p>
+                    <p className="text-green-700 font-semibold text-sm">{t('packages.inspect.noCveDetected')}</p>
+                    <p className="text-green-600 text-xs mt-1">{t('packages.inspect.noCveClean')}</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -607,13 +629,13 @@ function InspectPanel({ pkg, onClose }) {
               </section>
             )}
 
-            {/* ── Onglet : Décision RSSI ── */}
+            {/* Decision tab */}
             {tab === "decision" && (
               <section className="px-4 py-5">
                 {!decision?.decision ? (
                   <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-8 text-center">
-                    <p className="text-gray-600 font-semibold text-sm">Aucune décision RSSI enregistrée</p>
-                    <p className="text-gray-400 text-xs mt-1">Rendez-vous dans la page Sécurité pour traiter ce paquet</p>
+                    <p className="text-gray-600 font-semibold text-sm">{t('packages.inspect.noDecision')}</p>
+                    <p className="text-gray-400 text-xs mt-1">{t('packages.inspect.noDecisionHint')}</p>
                   </div>
                 ) : (
                   <>
@@ -626,17 +648,19 @@ function InspectPanel({ pkg, onClose }) {
                         </span>
                         {decision.sla?.days_remaining != null && (
                           <span className={`text-xs font-medium ${decision.sla.days_remaining < 7 ? "text-red-600" : "text-gray-600"}`}>
-                            {decision.sla.days_remaining > 0 ? `Expire dans ${decision.sla.days_remaining}j` : "Expiré"}
+                            {decision.sla.days_remaining > 0
+                              ? t('packages.inspect.sla.expiringSoon', { days: decision.sla.days_remaining })
+                              : t('packages.inspect.sla.expired')}
                           </span>
                         )}
                       </div>
                     </div>
                     <div className="bg-white border border-gray-200 rounded-xl divide-y divide-gray-100">
                       {[
-                        { label: "Décidé par",   value: decision.decision.decided_by },
-                        { label: "Date",         value: decision.decision.decided_at ? new Date(decision.decision.decided_at).toLocaleString("fr-FR") : "–" },
-                        { label: "Expire le",    value: decision.decision.expires_at ? new Date(decision.decision.expires_at).toLocaleDateString("fr-FR") : "Jamais" },
-                        { label: "Justification", value: decision.decision.justification || "—" },
+                        { label: t('packages.inspect.decisionFields.decidedBy'), value: decision.decision.decided_by },
+                        { label: t('packages.inspect.decisionFields.date'),      value: decision.decision.decided_at ? new Date(decision.decision.decided_at).toLocaleString(dateLocale) : "–" },
+                        { label: t('packages.inspect.decisionFields.expiresAt'), value: decision.decision.expires_at ? new Date(decision.decision.expires_at).toLocaleDateString(dateLocale) : t('packages.inspect.decisionFields.never') },
+                        { label: t('packages.inspect.decisionFields.justification'), value: decision.decision.justification || "—" },
                       ].map(({ label, value }) => (
                         <div key={label} className="flex items-start px-4 py-3 gap-4">
                           <span className="text-xs text-gray-500 w-28 shrink-0 mt-0.5">{label}</span>
@@ -650,10 +674,10 @@ function InspectPanel({ pkg, onClose }) {
                         decision.sla.status === "expiring_soon" ? "bg-amber-50 text-amber-700 border border-amber-200" :
                         "bg-green-50 text-green-700 border border-green-200"
                       }`}>
-                        SLA : {decision.sla.status === "expired" ? "Expiré — révision requise" :
-                               decision.sla.status === "expiring_soon" ? `Expire dans ${decision.sla.days_remaining} jour(s)` :
-                               decision.sla.status === "no_sla" ? "Pas de SLA défini" :
-                               `Valide — ${decision.sla.days_remaining} jour(s) restant(s)`}
+                        SLA : {decision.sla.status === "expired" ? t('packages.inspect.sla.expired') :
+                               decision.sla.status === "expiring_soon" ? t('packages.inspect.sla.expiringSoon', { days: decision.sla.days_remaining }) :
+                               decision.sla.status === "no_sla" ? t('packages.inspect.sla.noSla') :
+                               t('packages.inspect.sla.valid', { days: decision.sla.days_remaining })}
                       </div>
                     )}
                   </>
@@ -661,12 +685,12 @@ function InspectPanel({ pkg, onClose }) {
               </section>
             )}
 
-            {/* ── Onglet : Historique ── */}
+            {/* History tab */}
             {tab === "history" && (
               <section className="px-4 py-5">
                 {auditHistory.length === 0 ? (
                   <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-8 text-center">
-                    <p className="text-gray-500 text-sm">Aucun historique disponible</p>
+                    <p className="text-gray-500 text-sm">{t('packages.inspect.noHistory')}</p>
                   </div>
                 ) : (
                   <div className="space-y-1.5">
@@ -678,9 +702,9 @@ function InspectPanel({ pkg, onClose }) {
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-xs font-bold text-gray-700">{entry.action}</span>
-                              <span className="text-xs text-gray-400">par {entry.user}</span>
+                              <span className="text-xs text-gray-400">{t('packages.inspect.byUser')} {entry.user}</span>
                               <span className="text-xs text-gray-300">·</span>
-                              <span className="text-xs text-gray-400">{entry.timestamp ? new Date(entry.timestamp).toLocaleString("fr-FR") : "–"}</span>
+                              <span className="text-xs text-gray-400">{entry.timestamp ? new Date(entry.timestamp).toLocaleString(dateLocale) : "–"}</span>
                             </div>
                             {entry.detail && <p className="text-xs text-gray-500 mt-0.5 truncate">{entry.detail}</p>}
                           </div>
@@ -699,16 +723,7 @@ function InspectPanel({ pkg, onClose }) {
   );
 }
 
-// ─── Composant principal ──────────────────────────────────────────────────────
-
-const DISTRIB_TABS = [
-  { id: "all",      label: "Toutes" },
-  { id: "almalinux8",         label: "AlmaLinux 8" },
-  { id: "rocky8",             label: "Rocky Linux 8" },
-  { id: "centos-stream9",     label: "CentOS Stream 9" },
-  { id: "fedora",             label: "Fedora" },
-  { id: "opensuse-tumbleweed", label: "openSUSE Tumbleweed" },
-];
+// ─── Main component ───────────────────────────────────────────────────────────
 
 const DISTRIB_COLORS = {
   almalinux8:         "bg-blue-100 text-blue-700",
@@ -721,6 +736,32 @@ const DISTRIB_COLORS = {
 const PER_PAGE = 50;
 
 export default function PackageList() {
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language?.startsWith('fr') ? 'fr-FR' : 'en-GB';
+
+  const formatDate = (iso) => {
+    if (!iso) return "–";
+    return new Date(iso).toLocaleDateString(dateLocale, {
+      day: "2-digit", month: "short", year: "numeric",
+    });
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text).then(
+      () => toast.success(t('packages.copied')),
+      () => toast.error(t('packages.copyError'))
+    );
+  };
+
+  const DISTRIB_TABS = [
+    { id: "all",      label: t('packages.allDistributions') },
+    { id: "almalinux8",         label: "AlmaLinux 8" },
+    { id: "rocky8",             label: "Rocky Linux 8" },
+    { id: "centos-stream9",     label: "CentOS Stream 9" },
+    { id: "fedora",             label: "Fedora" },
+    { id: "opensuse-tumbleweed", label: "openSUSE Tumbleweed" },
+  ];
+
   const [packages, setPackages]             = useState([]);
   const [page, setPage]                     = useState(1);
   const [pages, setPages]                   = useState(1);
@@ -737,7 +778,6 @@ export default function PackageList() {
 
   const timerRef = useRef(null);
 
-  // Debounce: searchInput → filter (350 ms), reset page
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
@@ -747,7 +787,6 @@ export default function PackageList() {
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, [searchInput]);
 
-  // Fetch when page / filter / distribFilter / fetchTrigger changes
   useEffect(() => {
     setLoading(true);
     listArtifacts(page, PER_PAGE, filter || null, distribFilter === "all" ? null : distribFilter)
@@ -757,22 +796,22 @@ export default function PackageList() {
         setPages(data.pages || 1);
         setTotal(data.total || 0);
       })
-      .catch(() => toast.error("Impossible de charger les paquets"))
+      .catch(() => toast.error(t('packages.loadError')))
       .finally(() => setLoading(false));
   }, [page, filter, distribFilter, fetchTrigger]); // eslint-disable-line
 
-  const refresh = useCallback(() => setFetchTrigger((t) => t + 1), []);
+  const refresh = useCallback(() => setFetchTrigger((v) => v + 1), []);
 
   const handleDelete = async (name) => {
-    if (!window.confirm(`Supprimer ${name} du dépôt ?`)) return;
+    if (!window.confirm(t('packages.deleteConfirmMsg', { name }))) return;
     setDeleting(name);
     try {
       await deleteArtifact(name);
-      toast.success(`${name} supprimé`);
+      toast.success(t('packages.deleteSuccess', { name }));
       if (inspecting?.name === name) setInspecting(null);
       refresh();
     } catch {
-      toast.error(`Impossible de supprimer ${name}`);
+      toast.error(t('packages.deleteError', { name }));
     } finally {
       setDeleting("");
     }
@@ -782,10 +821,10 @@ export default function PackageList() {
     setSyncing(true);
     try {
       const result = await syncIndex();
-      toast.success(`Index synchronisé — ${result.packages_indexed} paquet(s)`);
+      toast.success(t('packages.syncSuccess', { count: result.packages_indexed }));
       refresh();
     } catch {
-      toast.error("Échec de la synchronisation");
+      toast.error(t('packages.syncError'));
     } finally {
       setSyncing(false);
     }
@@ -795,18 +834,17 @@ export default function PackageList() {
     setResolving(null);
     refresh();
     if (hadErrors) {
-      toast.error("Import partiel — vérifiez les logs. Pensez à synchroniser les sources RPM si des paquets sont introuvables.", { duration: 6000 });
+      toast.error(t('packages.resolvePartialError'), { duration: 6000 });
     } else {
-      toast.success("Dépendances importées — liste mise à jour");
+      toast.success(t('packages.resolveSuccess'));
     }
-  }, [refresh]);
+  }, [refresh, t]);
 
   const handleDistribChange = (id) => {
     setDistribFilter(id);
     setPage(1);
   };
 
-  // visible = packages already filtered server-side (current page only)
   const visible = packages;
 
   return (
@@ -825,9 +863,9 @@ export default function PackageList() {
       <div className="space-y-6 p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Paquets disponibles</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{t('packages.title')}</h1>
             <p className="text-sm text-gray-500 mt-0.5">
-              {total} paquet(s) — accessible via{" "}
+              {t('packages.subtitle', { count: total })}{" "}
               <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs font-mono">dnf install</code>
             </p>
           </div>
@@ -838,7 +876,7 @@ export default function PackageList() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            {syncing ? "Sync..." : "Sync index"}
+            {syncing ? t('packages.syncing') : t('packages.syncIndex')}
           </button>
         </div>
 
@@ -848,27 +886,27 @@ export default function PackageList() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
               d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0" />
           </svg>
-          <input type="text" placeholder="Rechercher un paquet..." value={searchInput}
+          <input type="text" placeholder={t('packages.searchPlaceholder')} value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm
                        focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" />
         </div>
 
-        {/* Filtre par distribution */}
+        {/* Distribution filter */}
         <div className="flex items-center gap-2 flex-wrap">
-          {DISTRIB_TABS.map((tab) => {
-            const isActive = distribFilter === tab.id;
+          {DISTRIB_TABS.map((tabItem) => {
+            const isActive = distribFilter === tabItem.id;
             return (
               <button
-                key={tab.id}
-                onClick={() => handleDistribChange(tab.id)}
+                key={tabItem.id}
+                onClick={() => handleDistribChange(tabItem.id)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
                   isActive
                     ? "bg-blue-600 text-white border-blue-600"
                     : "text-gray-500 border-gray-200 hover:border-blue-400 hover:text-blue-600"
                 }`}
               >
-                {tab.label}
+                {tabItem.label}
                 {isActive && (
                   <span className="px-1.5 py-0.5 rounded text-xs bg-white/20 text-white">
                     {total}
@@ -881,23 +919,23 @@ export default function PackageList() {
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           {loading ? (
-            <div className="p-10 text-center text-gray-400 text-sm">Chargement...</div>
+            <div className="p-10 text-center text-gray-400 text-sm">{t('common.loading')}</div>
           ) : visible.length === 0 ? (
             <div className="p-10 text-center text-gray-400 text-sm">
-              {filter ? "Aucun paquet ne correspond." : "Le dépôt est vide."}
+              {filter ? t('packages.noMatch') : t('packages.emptyRepo')}
             </div>
           ) : (
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50 text-xs text-gray-500 uppercase tracking-wider">
-                  <th className="text-left px-5 py-3 font-semibold">Paquet</th>
-                  <th className="text-left px-4 py-3 font-semibold">Version</th>
-                  <th className="text-left px-4 py-3 font-semibold hidden md:table-cell">Arch</th>
-                  <th className="text-left px-4 py-3 font-semibold hidden lg:table-cell">Taille</th>
-                  <th className="text-left px-4 py-3 font-semibold hidden lg:table-cell">Importé le</th>
-                  <th className="text-left px-4 py-3 font-semibold">Statut</th>
-                  <th className="text-left px-4 py-3 font-semibold hidden lg:table-cell">CVE</th>
-                  <th className="px-4 py-3 text-right font-semibold">Actions</th>
+                  <th className="text-left px-5 py-3 font-semibold">{t('packages.tableHeaders.package')}</th>
+                  <th className="text-left px-4 py-3 font-semibold">{t('packages.tableHeaders.version')}</th>
+                  <th className="text-left px-4 py-3 font-semibold hidden md:table-cell">{t('packages.tableHeaders.arch')}</th>
+                  <th className="text-left px-4 py-3 font-semibold hidden lg:table-cell">{t('packages.tableHeaders.size')}</th>
+                  <th className="text-left px-4 py-3 font-semibold hidden lg:table-cell">{t('packages.tableHeaders.addedOn')}</th>
+                  <th className="text-left px-4 py-3 font-semibold">{t('packages.tableHeaders.status')}</th>
+                  <th className="text-left px-4 py-3 font-semibold hidden lg:table-cell">{t('packages.tableHeaders.cve')}</th>
+                  <th className="px-4 py-3 text-right font-semibold">{t('packages.tableHeaders.actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -959,12 +997,12 @@ export default function PackageList() {
                         {formatDate(pkg.imported_at)}
                       </td>
 
-                      {/* Statut — cliquable si deps manquantes */}
+                      {/* Status — clickable if missing deps */}
                       <td className="px-4 py-3.5">
                         {hasMissing ? (
                           <button
                             onClick={() => setResolving(isResolving ? null : pkg)}
-                            title={`Manquants : ${pkg.deps_missing.join(", ")}`}
+                            title={`Missing: ${pkg.deps_missing.join(", ")}`}
                             className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium
                                         transition-colors cursor-pointer ${
                               isResolving
@@ -976,14 +1014,14 @@ export default function PackageList() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                                 d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                             </svg>
-                            {pkg.deps_missing.length} dep{pkg.deps_missing.length > 1 ? "s" : ""} manquante{pkg.deps_missing.length > 1 ? "s" : ""}
+                            {t('packages.status.missingDeps', { count: pkg.deps_missing.length })}
                           </button>
                         ) : (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">
                             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
-                            Disponible
+                            {t('packages.status.available')}
                           </span>
                         )}
                       </td>
@@ -997,7 +1035,7 @@ export default function PackageList() {
                       <td className="px-4 py-3.5">
                         <div className="flex items-center justify-end gap-1.5">
 
-                          {/* Inspecter */}
+                          {/* Inspect */}
                           <button
                             onClick={() => setInspecting(isInspecting ? null : pkg)}
                             className={`p-2 rounded-lg transition-colors border ${
@@ -1005,7 +1043,7 @@ export default function PackageList() {
                                 ? "bg-blue-600 text-white border-blue-600"
                                 : "text-gray-500 border-gray-200 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50"
                             }`}
-                            title="Inspecter"
+                            title={t('packages.actions.inspect')}
                           >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -1013,7 +1051,7 @@ export default function PackageList() {
                             </svg>
                           </button>
 
-                          {/* Résoudre (deps manquantes) ou Copier dnf install */}
+                          {/* Resolve deps or copy dnf install */}
                           {hasMissing ? (
                             <button
                               onClick={() => setResolving(isResolving ? null : pkg)}
@@ -1022,7 +1060,7 @@ export default function PackageList() {
                                   ? "bg-amber-500 text-white border-amber-500"
                                   : "text-amber-600 border-amber-200 hover:bg-amber-50 hover:border-amber-400"
                               }`}
-                              title="Résoudre les dépendances manquantes"
+                              title={t('packages.actions.resolveDeps')}
                             >
                               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -1034,7 +1072,7 @@ export default function PackageList() {
                               onClick={() => copyToClipboard(aptCmd)}
                               className="p-2 rounded-lg transition-colors border text-gray-500 border-gray-200
                                          hover:bg-gray-900 hover:text-white hover:border-gray-900"
-                              title={`Copier : ${aptCmd}`}
+                              title={t('packages.actions.copy', { cmd: aptCmd })}
                             >
                               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -1043,12 +1081,12 @@ export default function PackageList() {
                             </button>
                           )}
 
-                          {/* Télécharger .rpm */}
+                          {/* Download .rpm */}
                           {debUrl && (
                             <a href={debUrl} download
                               className="p-2 rounded-lg transition-colors border text-gray-500 border-gray-200
                                          hover:bg-gray-50 hover:text-gray-700"
-                              title="Télécharger le .rpm">
+                              title={t('packages.actions.download')}>
                               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                                   d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -1056,12 +1094,12 @@ export default function PackageList() {
                             </a>
                           )}
 
-                          {/* Supprimer */}
+                          {/* Delete */}
                           <button onClick={() => handleDelete(pkg.name)} disabled={deleting === pkg.name}
                             className="p-2 rounded-lg transition-colors border border-transparent
                                        text-red-400 hover:bg-red-50 hover:border-red-200 hover:text-red-600
                                        disabled:opacity-40"
-                            title="Supprimer du dépôt">
+                            title={t('packages.actions.delete')}>
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                                 d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

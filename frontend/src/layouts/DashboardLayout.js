@@ -2,6 +2,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { getMeInfo, mfaSetup, mfaConfirm, mfaDisable } from "../api";
+import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "../components/LanguageSwitcher";
 
 // ─── Icônes SVG professionnelles ─────────────────────────────────────────────
 
@@ -173,28 +175,29 @@ const Icon = {
 // ─── Menu Help ────────────────────────────────────────────────────────────────
 const DOC_BASE = "https://docs.repod.getautoflow.dev";
 
-const HELP_LINKS = [
-  {
-    section: "Documentation",
-    items: [
-      { label: "Démarrage rapide",   href: `${DOC_BASE}/getting-started/`,           icon: "Zap" },
-      { label: "Guide d'administration", href: `${DOC_BASE}/fr/ADMINISTRATION/`,     icon: "BookOpen" },
-      { label: "Référence API",      href: `${DOC_BASE}/fr/API_REFERENCE/`,          icon: "FileText" },
-      { label: "Rotation des clés GPG", href: `${DOC_BASE}/how-to/rotate-gpg-keys/`, icon: "ExternalLink" },
-    ],
-  },
-  {
-    section: "Ressources",
-    items: [
-      { label: "Changelog",          href: `${DOC_BASE}/changelog/`,                 icon: "FileText" },
-      { label: "Contacter le support", href: "mailto:support@getautoflow.dev",       icon: "MessageCircle" },
-    ],
-  },
-];
-
 function HelpMenu() {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
+
+  const HELP_LINKS = [
+    {
+      section: "Documentation",
+      items: [
+        { label: t('help.quickStart'),    href: `${DOC_BASE}/getting-started/`,        icon: "Zap" },
+        { label: t('help.adminGuide'),    href: `${DOC_BASE}/fr/ADMINISTRATION/`,      icon: "BookOpen" },
+        { label: t('help.apiReference'),  href: `${DOC_BASE}/fr/API_REFERENCE/`,       icon: "FileText" },
+        { label: t('help.gpgRotation'),   href: `${DOC_BASE}/how-to/rotate-gpg-keys/`, icon: "ExternalLink" },
+      ],
+    },
+    {
+      section: t('help.resources'),
+      items: [
+        { label: "Changelog",             href: `${DOC_BASE}/changelog/`,              icon: "FileText" },
+        { label: t('help.contactSupport'), href: "mailto:support@getautoflow.dev",     icon: "MessageCircle" },
+      ],
+    },
+  ];
 
   useEffect(() => {
     if (!open) return;
@@ -210,17 +213,17 @@ function HelpMenu() {
         className={`relative w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
           open ? "bg-slate-100 text-slate-700" : "text-slate-400 hover:bg-slate-100 hover:text-slate-600"
         }`}
-        aria-label="Aide"
-        title="Aide"
+        aria-label={t('help.contextual')}
+        title={t('help.contextual')}
       >
         <span className="w-4 h-4"><Icon.HelpCircle /></span>
       </button>
 
       {open && (
         <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-xl shadow-xl border border-slate-200 z-50 overflow-hidden">
-          {/* En-tête */}
+          {/* Header */}
           <div className="px-4 py-3 bg-slate-50 border-b border-slate-200">
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Centre d'aide</p>
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">{t('help.center')}</p>
             <p className="text-[11px] text-slate-400 mt-0.5">Repod — RPM Repository</p>
           </div>
 
@@ -255,7 +258,7 @@ function HelpMenu() {
             </div>
           ))}
 
-          {/* CTA Upgrade — spécifique Community */}
+          {/* CTA Upgrade — Community */}
           <div className="p-3 border-t border-slate-100 bg-gradient-to-br from-indigo-50 to-violet-50">
             <a
               href="https://repod.getautoflow.dev/#demo"
@@ -265,7 +268,7 @@ function HelpMenu() {
               className="flex items-center gap-2 w-full px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition-colors"
             >
               <span className="w-3.5 h-3.5 shrink-0"><Icon.ArrowUpRight /></span>
-              <span className="flex-1">Passer à Enterprise</span>
+              <span className="flex-1">{t('help.upgradeToEnterprise')}</span>
               <span className="text-indigo-300 text-[10px] font-normal">CVE · SBOM · LDAP</span>
             </a>
             <p className="text-[10px] text-slate-400 text-center mt-2">
@@ -279,21 +282,21 @@ function HelpMenu() {
 }
 
 // ─── Libellés des pages pour le topbar ───────────────────────────────────────
-const PAGE_TITLES = {
-  "/":             { label: "Tableau de bord",  icon: "Dashboard" },
-  "/packages":     { label: "Paquets",           icon: "Package" },
-  "/upload":       { label: "Upload",            icon: "Upload" },
-  "/import":       { label: "Importer",          icon: "Import" },
-  "/distributions":{ label: "Distributions",     icon: "Distribution" },
-  "/security":     { label: "Sécurité",          icon: "Shield" },
-  "/audit":        { label: "Audit",             icon: "Audit" },
-  "/setup":        { label: "Config client",     icon: "Terminal" },
-  "/users":        { label: "Utilisateurs",      icon: "Users" },
-  "/settings":     { label: "Paramètres",        icon: "Settings" },
-  "/downloads":    { label: "Téléchargements",   icon: "Download" },
-  "/health":       { label: "Supervision",       icon: "Health"   },
-  "/sbom":         { label: "SBOM",              icon: "Sbom"     },
-  "/sso":          { label: "SSO / OIDC",        icon: "Sso"      },
+const PAGE_TITLE_KEYS = {
+  "/":             { key: "nav.dashboard",     icon: "Dashboard" },
+  "/packages":     { key: "nav.packages",      icon: "Package" },
+  "/upload":       { key: "nav.upload",        icon: "Upload" },
+  "/import":       { key: "nav.import",        icon: "Import" },
+  "/distributions":{ key: "nav.distributions", icon: "Distribution" },
+  "/security":     { key: "nav.security",      icon: "Shield" },
+  "/audit":        { key: "nav.audit",         icon: "Audit" },
+  "/setup":        { key: "nav.clientSetup",   icon: "Terminal" },
+  "/users":        { key: "nav.users",         icon: "Users" },
+  "/settings":     { key: "nav.settings",      icon: "Settings" },
+  "/downloads":    { key: "nav.downloads",     icon: "Download" },
+  "/health":       { key: "nav.health",        icon: "Health" },
+  "/sbom":         { key: "nav.sbom",          icon: "Sbom" },
+  "/sso":          { key: "nav.sso",           icon: "Sso" },
 };
 
 // ─── Item de navigation ───────────────────────────────────────────────────────
@@ -314,7 +317,6 @@ function NavItem({ to, end, icon, label, badge, enterprise = false }) {
     >
       {({ isActive }) => (
         <>
-          {/* Accent bar gauche */}
           {isActive && (
             <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-brand rounded-full" />
           )}
@@ -349,11 +351,11 @@ function NavSection({ label }) {
 
 // ─── Modal "Mon compte" ───────────────────────────────────────────────────────
 function MonCompteModal({ onClose }) {
+  const { t } = useTranslation();
   const [me, setMe]         = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // États MFA — garde l'approche RPM (code TOTP pour désactiver, pas mot de passe)
-  const [mfaStep,   setMfaStep]   = useState("idle"); // idle|qr|confirm|disabling|ok_enable|ok_disable
+  const [mfaStep,   setMfaStep]   = useState("idle");
   const [qrData,    setQrData]    = useState(null);
   const [code,      setCode]      = useState("");
   const [err,       setErr]       = useState("");
@@ -362,7 +364,7 @@ function MonCompteModal({ onClose }) {
   const loadMe = useCallback(async () => {
     setLoading(true);
     try { setMe(await getMeInfo()); }
-    catch { /* silencieux */ }
+    catch { /* silent */ }
     finally { setLoading(false); }
   }, []);
 
@@ -371,29 +373,29 @@ function MonCompteModal({ onClose }) {
   const handleSetup = async () => {
     setBusy(true); setErr("");
     try { const data = await mfaSetup(); setQrData(data); setMfaStep("qr"); }
-    catch { setErr("Erreur lors de la génération du QR code."); }
+    catch { setErr(t('account.mfa.errors.qrFailed', "Error generating QR code.")); }
     finally { setBusy(false); }
   };
 
   const handleConfirm = async (e) => {
     e.preventDefault();
-    if (code.length !== 6) { setErr("Code à 6 chiffres requis."); return; }
+    if (code.length !== 6) { setErr(t('account.mfa.errors.sixDigits', "6-digit code required.")); return; }
     setBusy(true); setErr("");
     try {
       await mfaConfirm(code);
       setMfaStep("ok_enable"); loadMe();
-    } catch (ex) { setErr(ex?.response?.data?.detail || "Code invalide."); }
+    } catch (ex) { setErr(ex?.response?.data?.detail || t('account.mfa.errors.invalidCode', "Invalid code.")); }
     finally { setBusy(false); setCode(""); }
   };
 
   const handleDisable = async (e) => {
     e.preventDefault();
-    if (code.length !== 6) { setErr("Code à 6 chiffres requis."); return; }
+    if (code.length !== 6) { setErr(t('account.mfa.errors.sixDigits', "6-digit code required.")); return; }
     setBusy(true); setErr("");
     try {
       await mfaDisable(code);
       setMfaStep("ok_disable"); loadMe();
-    } catch (ex) { setErr(ex?.response?.data?.detail || "Code invalide."); }
+    } catch (ex) { setErr(ex?.response?.data?.detail || t('account.mfa.errors.invalidCode', "Invalid code.")); }
     finally { setBusy(false); setCode(""); }
   };
 
@@ -422,7 +424,7 @@ function MonCompteModal({ onClose }) {
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-base font-bold text-gray-900">Mon compte</h2>
+          <h2 className="text-base font-bold text-gray-900">{t('account.title')}</h2>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 text-gray-400 transition-colors">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/>
@@ -440,7 +442,7 @@ function MonCompteModal({ onClose }) {
             </div>
           ) : (
             <>
-              {/* ── Infos utilisateur ─────────────────────────────────────── */}
+              {/* ── User info ─────────────────────────────────────── */}
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
                   <span className="text-xl font-bold text-blue-700 uppercase">
@@ -464,7 +466,7 @@ function MonCompteModal({ onClose }) {
                 </div>
               </div>
 
-              {/* ── Section MFA ───────────────────────────────────────────── */}
+              {/* ── MFA Section ───────────────────────────────────────────── */}
               <div className="border border-gray-200 rounded-xl overflow-hidden">
                 <div className="px-4 py-3 bg-gray-50 flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -472,12 +474,12 @@ function MonCompteModal({ onClose }) {
                       <path strokeLinecap="round" strokeLinejoin="round"
                         d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                     </svg>
-                    <span className="text-sm font-semibold text-gray-800">Double authentification (MFA)</span>
+                    <span className="text-sm font-semibold text-gray-800">{t('account.mfa.title')}</span>
                   </div>
                   <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
                     me?.mfa_enabled ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
                   }`}>
-                    {me?.mfa_enabled ? "Activé" : "Désactivé"}
+                    {me?.mfa_enabled ? t('account.mfa.status.active') : t('account.mfa.status.inactive')}
                   </span>
                 </div>
 
@@ -487,18 +489,18 @@ function MonCompteModal({ onClose }) {
                     <>
                       <p className="text-xs text-gray-500">
                         {me?.mfa_enabled
-                          ? "Un code TOTP est demandé à chaque connexion. Compatible Google Authenticator, Authy, Bitwarden…"
-                          : "Ajoutez une deuxième couche de sécurité — un code de votre application mobile sera requis à chaque connexion."}
+                          ? t('account.mfa.activeDescription')
+                          : t('account.mfa.inactiveDescription')}
                       </p>
                       {me?.mfa_enabled ? (
                         <button onClick={() => { setMfaStep("disabling"); setErr(""); setCode(""); }}
                           className="w-full px-4 py-2 border border-red-200 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors">
-                          Désactiver le MFA
+                          {t('account.mfa.disableButton')}
                         </button>
                       ) : (
                         <button onClick={handleSetup} disabled={busy}
                           className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors">
-                          {busy ? "Initialisation…" : "Activer le MFA"}
+                          {busy ? t('account.mfa.setup.confirming') : t('account.mfa.enableButton')}
                         </button>
                       )}
                     </>
@@ -508,22 +510,22 @@ function MonCompteModal({ onClose }) {
                   {mfaStep === "qr" && qrData && (
                     <div className="space-y-4">
                       <p className="text-xs text-gray-600">
-                        Scannez ce QR code avec <strong>Google Authenticator</strong>, <strong>Authy</strong> ou <strong>Bitwarden</strong>.
+                        {t('account.mfa.setup.instructions')}
                       </p>
                       <div className="flex justify-center">
                         <img src={qrData.qr_code} alt="QR code TOTP"
                           className="w-40 h-40 rounded-xl border border-gray-200 shadow-sm" />
                       </div>
                       <details className="text-xs text-gray-400">
-                        <summary className="cursor-pointer hover:text-gray-600">Entrer le code manuellement</summary>
+                        <summary className="cursor-pointer hover:text-gray-600">{t('account.mfa.setup.manualKey')}</summary>
                         <p className="mt-1 font-mono break-all bg-gray-50 rounded p-2 select-all">{qrData.secret}</p>
                       </details>
                       <button onClick={() => { setMfaStep("confirm"); setCode(""); setErr(""); }}
                         className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors">
-                        J'ai scanné le QR code →
+                        {t('account.mfa.setup.scannedQr')}
                       </button>
                       <button onClick={() => { setMfaStep("idle"); setQrData(null); }}
-                        className="w-full text-xs text-gray-400 hover:text-gray-600">Annuler</button>
+                        className="w-full text-xs text-gray-400 hover:text-gray-600">{t('common.cancel')}</button>
                     </div>
                   )}
 
@@ -531,37 +533,37 @@ function MonCompteModal({ onClose }) {
                   {mfaStep === "confirm" && (
                     <form onSubmit={handleConfirm} className="space-y-3">
                       <p className="text-xs text-gray-600">
-                        Saisissez le code affiché dans votre application pour confirmer l'activation.
+                        {t('account.mfa.setup.confirmInstructions')}
                       </p>
                       <CodeInput ringColor="blue" />
                       {err && <p className="text-xs text-red-600">{err}</p>}
                       <button type="submit" disabled={busy || code.length !== 6}
                         className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors">
-                        {busy ? "Activation…" : "Confirmer et activer"}
+                        {busy ? t('account.mfa.setup.confirming') : t('account.mfa.setup.confirmButton')}
                       </button>
                       <button type="button" onClick={() => setMfaStep("qr")}
-                        className="w-full text-xs text-gray-400 hover:text-gray-600">← Retour au QR code</button>
+                        className="w-full text-xs text-gray-400 hover:text-gray-600">{t('account.mfa.setup.backToQr')}</button>
                     </form>
                   )}
 
-                  {/* Désactivation — code TOTP */}
+                  {/* Disable — TOTP code */}
                   {mfaStep === "disabling" && (
                     <form onSubmit={handleDisable} className="space-y-3">
                       <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 text-xs text-orange-700">
-                        <strong>Confirmation requise.</strong> Entrez votre code TOTP actuel pour désactiver le MFA.
+                        {t('account.mfa.disable.instructions')}
                       </div>
                       <CodeInput ringColor="red" />
                       {err && <p className="text-xs text-red-600">{err}</p>}
                       <button type="submit" disabled={busy || code.length !== 6}
                         className="w-full px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors">
-                        {busy ? "Désactivation…" : "Désactiver le MFA"}
+                        {busy ? t('account.mfa.disable.disabling') : t('account.mfa.disable.disableButton')}
                       </button>
                       <button type="button" onClick={() => { setMfaStep("idle"); setCode(""); setErr(""); }}
-                        className="w-full text-xs text-gray-400 hover:text-gray-600">Annuler</button>
+                        className="w-full text-xs text-gray-400 hover:text-gray-600">{t('common.cancel')}</button>
                     </form>
                   )}
 
-                  {/* Succès MFA activé */}
+                  {/* MFA enabled success */}
                   {mfaStep === "ok_enable" && (
                     <div className="text-center space-y-3 py-1">
                       <div className="inline-flex items-center justify-center w-10 h-10 bg-green-100 rounded-full">
@@ -569,13 +571,13 @@ function MonCompteModal({ onClose }) {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/>
                         </svg>
                       </div>
-                      <p className="text-sm font-semibold text-gray-900">MFA activé !</p>
-                      <p className="text-xs text-gray-500">Votre compte est maintenant protégé par la double authentification TOTP.</p>
+                      <p className="text-sm font-semibold text-gray-900">{t('account.mfa.status.active')} !</p>
+                      <p className="text-xs text-gray-500">{t('account.mfa.enabledDescription')}</p>
                       <button onClick={() => setMfaStep("idle")} className="text-sm text-blue-600 hover:underline">OK</button>
                     </div>
                   )}
 
-                  {/* Succès MFA désactivé */}
+                  {/* MFA disabled success */}
                   {mfaStep === "ok_disable" && (
                     <div className="text-center space-y-3 py-1">
                       <div className="inline-flex items-center justify-center w-10 h-10 bg-gray-100 rounded-full">
@@ -584,8 +586,8 @@ function MonCompteModal({ onClose }) {
                             d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/>
                         </svg>
                       </div>
-                      <p className="text-sm font-semibold text-gray-900">MFA désactivé</p>
-                      <p className="text-xs text-gray-500">La double authentification a été retirée de votre compte.</p>
+                      <p className="text-sm font-semibold text-gray-900">{t('account.mfa.status.inactive')}</p>
+                      <p className="text-xs text-gray-500">{t('account.mfa.disabledDescription')}</p>
                       <button onClick={() => setMfaStep("idle")} className="text-sm text-blue-600 hover:underline">OK</button>
                     </div>
                   )}
@@ -604,12 +606,16 @@ export default function DashboardLayout() {
   const { signOut, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { t, i18n } = useTranslation();
   const [showMonCompte, setShowMonCompte] = useState(false);
 
   const handleLogout = () => { signOut(); navigate("/login"); };
 
-  const currentPage = PAGE_TITLES[location.pathname] || { label: "repod", icon: "Dashboard" };
-  const CurrentPageIcon = Icon[currentPage.icon];
+  const pageMeta = PAGE_TITLE_KEYS[location.pathname] || { key: "nav.dashboard", icon: "Dashboard" };
+  const CurrentPageIcon = Icon[pageMeta.icon];
+  const pageLabel = t(pageMeta.key);
+
+  const dateLocale = i18n.language?.startsWith('fr') ? 'fr-FR' : 'en-GB';
 
   return (
     <div className="flex h-screen bg-slate-100 font-sans overflow-hidden">
@@ -627,32 +633,31 @@ export default function DashboardLayout() {
           </div>
         </div>
 
-        {/* Navigation — mêmes labels qu'en enterprise, cadenas sur les items verrouillés */}
+        {/* Navigation */}
         <nav className="flex-1 px-2 py-3 overflow-y-auto space-y-px">
-          <NavItem to="/" end icon={<Icon.Dashboard />} label="Tableau de bord" />
+          <NavItem to="/" end icon={<Icon.Dashboard />} label={t('nav.dashboard')} />
 
-          <NavSection label="Dépôt" />
-          <NavItem to="/packages"      icon={<Icon.Package />}      label="Paquets" />
-          <NavItem to="/upload"        icon={<Icon.Upload />}        label="Upload" />
-          <NavItem to="/import"        icon={<Icon.Import />}        label="Importer" />
-          <NavItem to="/distributions" icon={<Icon.Distribution />}  label="Distributions" />
+          <NavSection label={t('nav.sections.repo')} />
+          <NavItem to="/packages"      icon={<Icon.Package />}      label={t('nav.packages')} />
+          <NavItem to="/upload"        icon={<Icon.Upload />}        label={t('nav.upload')} />
+          <NavItem to="/import"        icon={<Icon.Import />}        label={t('nav.import')} />
+          <NavItem to="/distributions" icon={<Icon.Distribution />}  label={t('nav.distributions')} />
 
-          <NavSection label="Sécurité" />
-          <NavItem to="/security" icon={<Icon.Shield />} label="Sécurité" />
-          <NavItem to="/audit"    icon={<Icon.Audit />}  label="Audit"     enterprise />
+          <NavSection label={t('nav.sections.security')} />
+          <NavItem to="/security" icon={<Icon.Shield />} label={t('nav.security')} />
+          <NavItem to="/audit"    icon={<Icon.Audit />}  label={t('nav.audit')}     enterprise />
 
-          <NavSection label="Clients" />
-          <NavItem to="/setup" icon={<Icon.Terminal />} label="Config client" />
+          <NavSection label={t('nav.sections.clients')} />
+          <NavItem to="/setup" icon={<Icon.Terminal />} label={t('nav.clientSetup')} />
 
-          <NavSection label="Administration" />
-          <NavItem to="/downloads" icon={<Icon.Download />} label="Téléchargements" enterprise />
-          <NavItem to="/sbom"      icon={<Icon.Sbom />}     label="SBOM"           enterprise />
-          <NavItem to="/health"    icon={<Icon.Health />}   label="Supervision" />
-          <NavItem to="/users"     icon={<Icon.Users />}    label="Utilisateurs" />
-          <NavItem to="/sso"       icon={<Icon.Sso />}      label="SSO / OIDC"     enterprise />
-          <NavItem to="/settings"  icon={<Icon.Settings />} label="Paramètres"     enterprise />
+          <NavSection label={t('nav.sections.admin')} />
+          <NavItem to="/downloads" icon={<Icon.Download />} label={t('nav.downloads')} enterprise />
+          <NavItem to="/sbom"      icon={<Icon.Sbom />}     label={t('nav.sbom')}      enterprise />
+          <NavItem to="/health"    icon={<Icon.Health />}   label={t('nav.health')} />
+          <NavItem to="/users"     icon={<Icon.Users />}    label={t('nav.users')} />
+          <NavItem to="/sso"       icon={<Icon.Sso />}      label={t('nav.sso')}       enterprise />
+          <NavItem to="/settings"  icon={<Icon.Settings />} label={t('nav.settings')}  enterprise />
         </nav>
-
 
         {/* Footer utilisateur */}
         <div className="px-2 py-3 border-t border-navy-800 space-y-1">
@@ -672,7 +677,7 @@ export default function DashboardLayout() {
             className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-xs font-medium text-slate-500 hover:bg-red-900/30 hover:text-red-400 transition-colors"
           >
             <span className="w-4 h-4"><Icon.Logout /></span>
-            Déconnexion
+            {t('nav.logout')}
           </button>
         </div>
       </aside>
@@ -686,20 +691,22 @@ export default function DashboardLayout() {
             <span className="text-slate-400 w-4 h-4">
               {CurrentPageIcon && <CurrentPageIcon />}
             </span>
-            <span className="font-semibold text-slate-700">{currentPage.label}</span>
+            <span className="font-semibold text-slate-700">{pageLabel}</span>
           </div>
           <div className="flex items-center gap-3">
             <span className="text-xs text-slate-400 font-mono">
-              {new Date().toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+              {new Date().toLocaleString(dateLocale, { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}
             </span>
             <button className="relative w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-colors">
               <span className="w-4 h-4"><Icon.Bell /></span>
             </button>
             <HelpMenu />
             <div className="w-px h-5 bg-slate-200" />
+            <LanguageSwitcher />
+            <div className="w-px h-5 bg-slate-200" />
             <div className="flex items-center gap-2 text-xs text-slate-500">
               <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              Connecté
+              {t('common.connected')}
             </div>
           </div>
         </header>
@@ -711,7 +718,7 @@ export default function DashboardLayout() {
               <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
             </svg>
             <p className="text-xs text-amber-800 font-medium truncate">
-              Débloquez CVE/CVSS, SBOM, SSO/OIDC, LDAP, MFA, audit complet et plus encore avec <strong>Repod Enterprise</strong>.
+              {t('enterprise.upgradeBanner')} <strong>Repod Enterprise</strong>.
             </p>
           </div>
           <a
@@ -720,11 +727,11 @@ export default function DashboardLayout() {
             rel="noopener noreferrer"
             className="shrink-0 flex items-center gap-1.5 px-3 py-1 rounded-md bg-orange-500 text-white text-[11px] font-semibold hover:bg-orange-600 transition-colors whitespace-nowrap"
           >
-            Demander une démo
+            {t('enterprise.upgradeButton')}
           </a>
         </div>
 
-        {/* Page content — fond dark géré par chaque page */}
+        {/* Page content */}
         <main className="flex-1 overflow-y-auto bg-slate-50">
           <Outlet />
         </main>

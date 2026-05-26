@@ -1,5 +1,6 @@
 import { useState } from "react";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 
 const REPO_URL = process.env.REACT_APP_REPO_URL || "http://localhost:8180";
 const REPO_HOST = REPO_URL.replace(/^https?:\/\//, "").replace(/:\d+$/, "");
@@ -7,10 +8,11 @@ const REPO_HOST = REPO_URL.replace(/^https?:\/\//, "").replace(/:\d+$/, "");
 // ─── Composants ───────────────────────────────────────────────────────────────
 
 function CodeBlock({ code, label }) {
+  const { t } = useTranslation();
   const copy = () => {
     navigator.clipboard.writeText(code).then(
-      () => toast.success("Copié"),
-      () => toast.error("Impossible de copier")
+      () => toast.success(t('common.copied')),
+      () => toast.error(t('setup.copyError'))
     );
   };
   return (
@@ -24,7 +26,7 @@ function CodeBlock({ code, label }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
             </svg>
-            Copier
+            {t('setup.copyButton')}
           </button>
         </div>
       )}
@@ -76,6 +78,7 @@ function InfoBox({ type = "info", children }) {
 // ─── Onglet 1 : Connexion DNF (RHEL/Fedora) ──────────────────────────────────
 
 function TabDnf({ distro }) {
+  const { t } = useTranslation();
   const repoFile = `/etc/yum.repos.d/depot-interne.repo`;
   const repoContent = `[depot-interne]
 name=Dépôt RPM Interne — ${distro}
@@ -147,14 +150,14 @@ echo "Dépôt interne configuré avec succès."`;
 
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-semibold text-gray-900">Script d'installation complet</h2>
+          <h2 className="text-base font-semibold text-gray-900">{t('setup.fullScript')}</h2>
           <span className="text-xs text-gray-400">Pour automatiser la configuration</span>
         </div>
         <CodeBlock code={fullScript} label="setup-depot-dnf.sh" />
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
-        <h2 className="text-sm font-semibold text-gray-700">Vérifier la configuration</h2>
+        <h2 className="text-sm font-semibold text-gray-700">{t('setup.verifyConfig')}</h2>
         <div className="space-y-2">
           <CodeBlock
             code={`# Vérifier que le dépôt est reconnu\nsudo dnf repolist | grep depot-interne\n\n# Rechercher un paquet\ndnf search <nom>\n\n# Afficher les informations d'un paquet\ndnf info <nom>`}
@@ -164,7 +167,7 @@ echo "Dépôt interne configuré avec succès."`;
       </div>
 
       <InfoBox type="warning">
-        <p className="font-medium">Accès réseau requis</p>
+        <p className="font-medium">{t('setup.networkAccess')}</p>
         <p className="mt-0.5">
           La machine doit pouvoir atteindre{" "}
           <code className="bg-amber-100 px-1 rounded font-mono text-xs">{REPO_URL}</code>{" "}
@@ -178,6 +181,7 @@ echo "Dépôt interne configuré avec succès."`;
 // ─── Onglet 2 : Connexion Zypper (openSUSE) ──────────────────────────────────
 
 function TabZypper({ distro }) {
+  const { t } = useTranslation();
   const repoAlias = "depot-interne";
   const repoUrl = `${REPO_URL}/repos/${distro}/x86_64/`;
 
@@ -227,12 +231,12 @@ echo "Dépôt interne configuré avec succès."`;
       </div>
 
       <div className="space-y-3">
-        <h2 className="text-base font-semibold text-gray-900">Script d'installation complet</h2>
+        <h2 className="text-base font-semibold text-gray-900">{t('setup.fullScript')}</h2>
         <CodeBlock code={fullScript} label="setup-depot-zypper.sh" />
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
-        <h2 className="text-sm font-semibold text-gray-700">Vérifier la configuration</h2>
+        <h2 className="text-sm font-semibold text-gray-700">{t('setup.verifyConfig')}</h2>
         <CodeBlock
           code={`# Lister les dépôts configurés\nzypper repos\n\n# Rechercher un paquet\nzypper search <nom>\n\n# Supprimer le dépôt si nécessaire\nsudo zypper removerepo ${repoAlias}`}
           label="bash"
@@ -240,7 +244,7 @@ echo "Dépôt interne configuré avec succès."`;
       </div>
 
       <InfoBox type="warning">
-        <p className="font-medium">Accès réseau requis</p>
+        <p className="font-medium">{t('setup.networkAccess')}</p>
         <p className="mt-0.5">
           La machine doit pouvoir atteindre{" "}
           <code className="bg-amber-100 px-1 rounded font-mono text-xs">{REPO_URL}</code>{" "}
@@ -335,6 +339,7 @@ curl -v --max-time 5 ${REPO_URL}/repos/RPM-GPG-KEY-DepotRPM 2>&1 | grep -E "200|
 // ─── Onglet 4 : Mises à jour automatiques ────────────────────────────────────
 
 function TabAutoUpdate({ distro, family }) {
+  const { t } = useTranslation();
   const isDnf = family === "dnf";
 
   const dnfAutomatic = `# Installer dnf-automatic (RHEL/Fedora/CentOS)
@@ -407,7 +412,7 @@ sudo systemctl enable --now depot-update.timer`;
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
-        <h2 className="text-sm font-semibold text-gray-800">Bonnes pratiques en production</h2>
+        <h2 className="text-sm font-semibold text-gray-800">{t('setup.bestPractices')}</h2>
         <div className="space-y-3 text-sm text-gray-600">
           <div className="flex gap-3">
             <span className="text-blue-500 font-bold shrink-0">→</span>
@@ -448,16 +453,17 @@ const DISTROS = [
   { id: "opensuse-tumbleweed",label: "openSUSE Tumbleweed",  family: "zypper" },
 ];
 
-const TABS = [
-  { id: "dnf",        label: "1. Config DNF/YUM",          icon: "M13 10V3L4 14h7v7l9-11h-7z" },
-  { id: "zypper",     label: "2. Config Zypper",            icon: "M13 10V3L4 14h7v7l9-11h-7z" },
-  { id: "isolation",  label: "3. Isolation réseau",         icon: "M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" },
-  { id: "autoupdate", label: "4. Mises à jour automatiques",icon: "M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" },
-];
-
 export default function ClientSetupPage() {
+  const { t } = useTranslation();
   const [distro, setDistro] = useState("almalinux8");
   const [activeTab, setActiveTab] = useState("dnf");
+
+  const TABS = [
+    { id: "dnf",        label: t('setup.tabs.dnf'),        icon: "M13 10V3L4 14h7v7l9-11h-7z" },
+    { id: "zypper",     label: t('setup.tabs.zypper'),     icon: "M13 10V3L4 14h7v7l9-11h-7z" },
+    { id: "isolation",  label: t('setup.tabs.network'),    icon: "M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" },
+    { id: "autoupdate", label: t('setup.tabs.autoUpdate'), icon: "M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" },
+  ];
 
   const currentDistro = DISTROS.find((d) => d.id === distro) || DISTROS[0];
 
@@ -470,16 +476,14 @@ export default function ClientSetupPage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Configuration des machines clientes</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Guide complet : connexion au dépôt RPM interne, isolation réseau et mises à jour automatiques.
-        </p>
+        <h1 className="text-2xl font-bold text-gray-900">{t('setup.title')}</h1>
+        <p className="text-sm text-gray-500 mt-1">{t('setup.description')}</p>
       </div>
 
       {/* Sélecteur de distribution */}
       <div className="bg-white rounded-xl border border-gray-200 p-4">
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-          Distribution cible — les scripts s'adaptent automatiquement
+          {t('setup.distributionSelectorLabel')}
         </p>
         <div className="flex flex-wrap gap-2">
           {DISTROS.map((d) => (

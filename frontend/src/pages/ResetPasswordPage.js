@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { resetPasswordWithToken } from "../api";
 
 export default function ResetPasswordPage() {
+  const { t } = useTranslation();
   const [searchParams]          = useSearchParams();
   const navigate                = useNavigate();
   const token                   = searchParams.get("token") || "";
@@ -13,21 +15,20 @@ export default function ResetPasswordPage() {
   const [error, setError]         = useState("");
   const [success, setSuccess]     = useState(false);
 
-  // Token manquant dans l'URL
   useEffect(() => {
-    if (!token) setError("Lien invalide. Refaites une demande depuis la page de connexion.");
-  }, [token]);
+    if (!token) setError(t('resetPassword.errors.tokenMissing'));
+  }, [token, t]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
     if (password.length < 8) {
-      setError("Le mot de passe doit contenir au moins 8 caractères.");
+      setError(t('resetPassword.errors.tooShort'));
       return;
     }
     if (password !== confirm) {
-      setError("Les deux mots de passe ne correspondent pas.");
+      setError(t('resetPassword.errors.passwordMismatch'));
       return;
     }
 
@@ -37,7 +38,7 @@ export default function ResetPasswordPage() {
       setSuccess(true);
     } catch (err) {
       const detail = err?.response?.data?.detail;
-      setError(detail || "Lien invalide ou expiré. Refaites une demande.");
+      setError(detail || t('resetPassword.errors.saveFailed'));
     } finally {
       setLoading(false);
     }
@@ -55,8 +56,8 @@ export default function ResetPasswordPage() {
                 d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Nouveau mot de passe</h1>
-          <p className="text-sm text-gray-500 mt-1">RPM Repository Manager</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('resetPassword.title')}</h1>
+          <p className="text-sm text-gray-500 mt-1">{t('resetPassword.appName')}</p>
         </div>
 
         {success ? (
@@ -66,27 +67,27 @@ export default function ResetPasswordPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/>
               </svg>
             </div>
-            <p className="text-sm font-medium text-gray-800">Mot de passe modifié !</p>
-            <p className="text-xs text-gray-500">Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.</p>
+            <p className="text-sm font-medium text-gray-800">{t('resetPassword.changed')}</p>
+            <p className="text-xs text-gray-500">{t('resetPassword.canLogin')}</p>
             <button
               onClick={() => navigate("/login")}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm
                          font-medium py-2 rounded-lg transition-colors mt-2"
             >
-              Se connecter
+              {t('resetPassword.loginButton')}
             </button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nouveau mot de passe
+                {t('auth.password')}
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); setError(""); }}
-                placeholder="8 caractères minimum"
+                placeholder={t('resetPassword.minLength')}
                 autoFocus
                 autoComplete="new-password"
                 className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2
@@ -96,7 +97,7 @@ export default function ResetPasswordPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Confirmer le mot de passe
+                {t('resetPassword.confirmPassword')}
               </label>
               <input
                 type="password"
@@ -109,12 +110,12 @@ export default function ResetPasswordPage() {
               />
             </div>
 
-            {/* Indicateur de force */}
+            {/* Password strength indicator */}
             {password.length > 0 && (
               <PasswordStrength password={password} />
             )}
 
-            {/* Erreur inline */}
+            {/* Inline error */}
             {error && (
               <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2.5">
                 <svg className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -131,7 +132,7 @@ export default function ResetPasswordPage() {
                          disabled:cursor-not-allowed text-white font-medium py-2
                          rounded-lg transition-colors text-sm"
             >
-              {loading ? "Enregistrement…" : "Enregistrer le mot de passe"}
+              {loading ? t('resetPassword.saving') : t('resetPassword.saveButton')}
             </button>
 
             <button
@@ -139,7 +140,7 @@ export default function ResetPasswordPage() {
               onClick={() => navigate("/login")}
               className="w-full text-sm text-gray-500 hover:text-gray-700 hover:underline"
             >
-              Retour à la connexion
+              {t('resetPassword.backToLogin')}
             </button>
           </form>
         )}
@@ -149,13 +150,14 @@ export default function ResetPasswordPage() {
 }
 
 
-// ── Indicateur de force du mot de passe ───────────────────────────────────────
+// ── Password strength indicator ───────────────────────────────────────────────
 function PasswordStrength({ password }) {
+  const { t } = useTranslation();
   const checks = [
-    { label: "8 caractères min.", ok: password.length >= 8 },
-    { label: "Majuscule",         ok: /[A-Z]/.test(password) },
-    { label: "Chiffre",           ok: /[0-9]/.test(password) },
-    { label: "Caractère spécial", ok: /[^A-Za-z0-9]/.test(password) },
+    { label: t('resetPassword.minLength'),          ok: password.length >= 8 },
+    { label: t('resetPassword.strength.uppercase'), ok: /[A-Z]/.test(password) },
+    { label: t('resetPassword.strength.number'),    ok: /[0-9]/.test(password) },
+    { label: t('resetPassword.strength.special'),   ok: /[^A-Za-z0-9]/.test(password) },
   ];
   const score = checks.filter((c) => c.ok).length;
   const colors = ["bg-red-400", "bg-orange-400", "bg-yellow-400", "bg-green-400", "bg-green-500"];

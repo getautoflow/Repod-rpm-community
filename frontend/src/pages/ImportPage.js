@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import {
   searchImportPackages,
@@ -50,7 +51,7 @@ function LogLine({ line }) {
   );
 }
 
-// ─── Timer écoulé ─────────────────────────────────────────────────────────────
+// ─── Timer ────────────────────────────────────────────────────────────────────
 
 function useElapsed(running) {
   const [elapsed, setElapsed] = useState(0);
@@ -68,9 +69,10 @@ function fmtElapsed(s) {
   return `${Math.floor(s / 60)}m${String(s % 60).padStart(2, "0")}s`;
 }
 
-// ─── Bloc de logs avec animation ─────────────────────────────────────────────
+// ─── Log box with animation ───────────────────────────────────────────────────
 
-function LogBox({ logs, running, done, logsRef, label = "Logs" }) {
+function LogBox({ logs, running, done, logsRef, label }) {
+  const { t } = useTranslation();
   const elapsed = useElapsed(running);
   if (logs.length === 0) return null;
   return (
@@ -78,8 +80,8 @@ function LogBox({ logs, running, done, logsRef, label = "Logs" }) {
       <div className="flex items-center justify-between mb-2">
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
           {label}
-          {done && <span className="text-green-400 ml-2">— Terminé</span>}
-          {running && <span className="text-yellow-400 ml-2">— En cours…</span>}
+          {done && <span className="text-green-400 ml-2">— {t('import.logDone')}</span>}
+          {running && <span className="text-yellow-400 ml-2">— {t('import.logRunning')}</span>}
         </p>
         {running && (
           <div className="flex items-center gap-2">
@@ -105,7 +107,7 @@ function LogBox({ logs, running, done, logsRef, label = "Logs" }) {
 
 // ─── SSE streaming ────────────────────────────────────────────────────────────
 
-function useSSEStream() {
+function useSSEStream(t) {
   const [logs, setLogs] = useState([]);
   const [running, setRunning] = useState(false);
   const [done, setDone] = useState(false);
@@ -118,7 +120,6 @@ function useSSEStream() {
     setRunning(true);
 
     const token = localStorage.getItem("token");
-    // EventSource ne supporte pas les headers custom — on utilise fetch + ReadableStream
     fetch(url, {
       method: "POST",
       headers: {
@@ -128,8 +129,8 @@ function useSSEStream() {
       body: JSON.stringify({}),
     }).then(async (resp) => {
       if (!resp.ok) {
-        const err = await resp.json().catch(() => ({ detail: "Erreur inconnue" }));
-        setLogs((prev) => [...prev, `error|${err.detail || "Erreur serveur"}`]);
+        const err = await resp.json().catch(() => ({ detail: t('import.unknownError') }));
+        setLogs((prev) => [...prev, `error|${err.detail || t('import.serverError')}`]);
         setRunning(false);
         return;
       }
@@ -176,8 +177,8 @@ function useSSEStream() {
       body: JSON.stringify(body),
     }).then(async (resp) => {
       if (!resp.ok) {
-        const err = await resp.json().catch(() => ({ detail: "Erreur inconnue" }));
-        setLogs((prev) => [...prev, `error|${err.detail || "Erreur serveur"}`]);
+        const err = await resp.json().catch(() => ({ detail: t('import.unknownError') }));
+        setLogs((prev) => [...prev, `error|${err.detail || t('import.serverError')}`]);
         setRunning(false);
         return;
       }
@@ -211,7 +212,7 @@ function useSSEStream() {
   return { logs, running, done, start, startWithBody };
 }
 
-// ─── Tab: Recherche & Import ──────────────────────────────────────────────────
+// ─── Tab: Search & Import ─────────────────────────────────────────────────────
 
 const DISTRIBUTIONS = [
   { codename: "almalinux8",         label: "AlmaLinux 8" },
@@ -237,6 +238,8 @@ function guessDistrib(distro) {
 }
 
 function SearchImportTab() {
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language?.startsWith('fr') ? 'fr-FR' : 'en-GB';
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
@@ -264,12 +267,12 @@ function SearchImportTab() {
     try {
       const data = await searchImportPackages(query.trim());
       setResults(data.results || []);
-      if ((data.results || []).length === 0) toast("Aucun résultat trouvé");
+      if ((data.results || []).length === 0) toast(t('import.search.noResults'));
     } catch (err) {
       if (err.response?.status === 424) {
-        toast.error("Index non synchronisé. Utilisez l'onglet Synchronisation d'abord.");
+        toast.error(t('import.search.noIndexSynced'));
       } else {
-        toast.error("Erreur lors de la recherche");
+        toast.error(t('import.search.searchError'));
       }
     } finally {
       setSearching(false);
@@ -293,7 +296,7 @@ function SearchImportTab() {
 
   const handleImport = async () => {
     if (!selected) return;
-    setLogs([`info|Import de ${selected.name} en cours…`]);
+    setLogs([`info|${t('import.search.importPackage', { name: selected.name })}`]);
     setRunning(true);
     setDone(false);
     const token = localStorage.getItem("token");
@@ -305,24 +308,24 @@ function SearchImportTab() {
       });
       const data = await resp.json();
       if (!resp.ok) {
-        setLogs([`error|${data.detail || "Erreur serveur"}`]);
+        setLogs([`error|${data.detail || t('import.serverError')}`]);
       } else if (data.success) {
         const msgs = [];
         if ((data.skipped || []).length > 0 && !(data.results || []).length) {
-          msgs.push(`success|${selected.name} est déjà présent dans le dépôt`);
+          msgs.push(`success|${t('import.search.alreadyInRepo', { name: selected.name })}`);
         } else {
-          msgs.push(`success|${selected.name} importé — ${data.imported ?? 0} paquet(s) ajouté(s)`);
+          msgs.push(`success|${t('import.search.importedCount', { name: selected.name, count: data.imported ?? 0 })}`);
           (data.results || []).forEach((r) =>
             msgs.push(`info|  • ${r.name}-${r.version} · ${r.arch} (${r.source})`)
           );
         }
         if (data.errors > 0)
-          msgs.push(`error|${data.errors} erreur(s) lors de l'import`);
-        msgs.push(`done|Import terminé`);
+          msgs.push(`error|${t('import.search.errorsCount', { count: data.errors })}`);
+        msgs.push(`done|${t('import.search.importDone')}`);
         setLogs(msgs);
         setDone(true);
       } else {
-        setLogs([`error|${data.error || "Import échoué"}`]);
+        setLogs([`error|${data.error || t('import.search.importFailed')}`]);
       }
     } catch (e) {
       setLogs([`error|${e.message}`]);
@@ -333,7 +336,7 @@ function SearchImportTab() {
 
   return (
     <div className="space-y-6 p-6">
-      {/* Barre de recherche */}
+      {/* Search bar */}
       <form onSubmit={handleSearch} className="flex gap-3">
         <input
           type="text"
@@ -347,18 +350,18 @@ function SearchImportTab() {
           disabled={searching}
           className="px-5 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
         >
-          {searching ? "Recherche..." : "Rechercher"}
+          {searching ? t('common.loading') : t('common.search')}
         </button>
       </form>
 
       <div className="grid grid-cols-2 gap-6">
-        {/* Résultats */}
+        {/* Results */}
         <div>
           {results.length > 0 && (
             <div className="border border-gray-200 rounded-lg overflow-hidden">
               <div className="bg-gray-50 px-4 py-2.5 border-b border-gray-200">
                 <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                  {results.length} résultat(s)
+                  {t('import.search.results_other', { count: results.length })}
                 </p>
               </div>
               <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
@@ -374,7 +377,7 @@ function SearchImportTab() {
                       <span className="text-sm font-medium text-gray-900 truncate">{pkg.name}</span>
                       <div className="flex items-center gap-1.5 shrink-0">
                         {pkg.security ? (
-                          <Badge color="red"><svg className="w-3 h-3 inline mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> Sécurité</Badge>
+                          <Badge color="red"><svg className="w-3 h-3 inline mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> {t('import.search.securityBadge')}</Badge>
                         ) : null}
                         <Badge color="gray">{pkg.version}</Badge>
                       </div>
@@ -388,7 +391,7 @@ function SearchImportTab() {
           )}
         </div>
 
-        {/* Détail + dépendances */}
+        {/* Detail + dependencies */}
         <div className="space-y-4">
           {selected && (
             <div className="border border-gray-200 rounded-lg p-4">
@@ -396,7 +399,7 @@ function SearchImportTab() {
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="font-semibold text-gray-900">{selected.name}</h3>
-                    {selected.security ? <Badge color="red"><svg className="w-3 h-3 inline mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> Patch sécurité</Badge> : null}
+                    {selected.security ? <Badge color="red"><svg className="w-3 h-3 inline mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> {t('import.search.securityPatchBadge')}</Badge> : null}
                   </div>
                   <p className="text-sm text-gray-500">{selected.version} · {selected.arch}</p>
                 </div>
@@ -405,12 +408,12 @@ function SearchImportTab() {
                   disabled={running}
                   className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
                 >
-                  {running ? "Import en cours..." : "Importer"}
+                  {running ? t('import.search.importRunning') : t('import.search.import')}
                 </button>
               </div>
-              {/* Sélecteur distribution */}
+              {/* Distribution selector */}
               <div className="mb-3">
-                <p className="text-xs text-gray-500 mb-1.5 font-medium">Distribution cible</p>
+                <p className="text-xs text-gray-500 mb-1.5 font-medium">{t('import.search.targetDistribution')}</p>
                 <div className="flex flex-wrap gap-1.5">
                   {DISTRIBUTIONS.map((d) => (
                     <button key={d.codename} type="button"
@@ -427,24 +430,23 @@ function SearchImportTab() {
                 <p className="text-sm text-gray-600 mb-3">{selected.description}</p>
               )}
 
-              {/* Dépendances */}
+              {/* Dependencies */}
               {resolvingDeps && (
-                <p className="text-xs text-gray-400 italic">Résolution des dépendances...</p>
+                <p className="text-xs text-gray-400 italic">{t('import.search.resolvingDeps')}</p>
               )}
               {deps && (
                 <div>
                   <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
-                    Dépendances — {deps.already_present}/{deps.total} dans le dépôt,{" "}
-                    {deps.to_download?.length ?? 0} à télécharger
+                    {t('import.search.deps')} — {t('import.search.depsCount', { present: deps.already_present, total: deps.total, toDownload: deps.to_download?.length ?? 0 })}
                   </p>
                   <div className="space-y-1 max-h-40 overflow-y-auto">
                     {deps.packages.map((p, i) => (
                       <div key={i} className="flex items-center justify-between text-xs">
                         <span className="text-gray-700">{p.name}</span>
                         {p.already_in_repo ? (
-                          <Badge color="green">dans le dépôt</Badge>
+                          <Badge color="green">{t('import.search.inRepo')}</Badge>
                         ) : (
-                          <Badge color="yellow">à télécharger</Badge>
+                          <Badge color="yellow">{t('import.search.toDownload')}</Badge>
                         )}
                       </div>
                     ))}
@@ -454,16 +456,17 @@ function SearchImportTab() {
             </div>
           )}
 
-          <LogBox logs={logs} running={running} done={done} logsRef={logsRef} label="Logs d'import" />
+          <LogBox logs={logs} running={running} done={done} logsRef={logsRef} label={t('import.search.logHeader')} />
         </div>
       </div>
     </div>
   );
 }
 
-// ─── Tab: Import par lot ──────────────────────────────────────────────────────
+// ─── Tab: Batch import ────────────────────────────────────────────────────────
 
 function BatchImportTab() {
+  const { t } = useTranslation();
   const [input, setInput] = useState("");
   const [distribution, setDistribution] = useState("almalinux8");
   const [logs, setLogs] = useState([]);
@@ -483,20 +486,20 @@ function BatchImportTab() {
       .map((s) => s.trim())
       .filter(Boolean);
     if (packages.length === 0) {
-      toast.error("Entrez au moins un nom de paquet");
+      toast.error(t('import.batch.atLeastOne'));
       return;
     }
     if (packages.length > 50) {
-      toast.error("Maximum 50 paquets par batch");
+      toast.error(t('import.batch.max50'));
       return;
     }
-    setLogs([`info|Import de ${packages.length} paquet(s)…`]);
+    setLogs([`info|${t('import.batch.importing', { count: packages.length })}`]);
     setRunning(true);
     setDone(false);
     const token = localStorage.getItem("token");
     let ok = 0, errors = 0;
     for (const pkg of packages) {
-      setLogs((prev) => [...prev, `info|Import de ${pkg}…`]);
+      setLogs((prev) => [...prev, `info|${t('import.batch.importPackage', { name: pkg })}`]);
       try {
         const resp = await fetch(`${API_URL}/api/v1/import/`, {
           method: "POST",
@@ -506,20 +509,20 @@ function BatchImportTab() {
         const data = await resp.json();
         if (!resp.ok || !data.success) {
           errors++;
-          setLogs((prev) => [...prev, `error|${pkg} — ${data.detail || data.error || "erreur"}`]);
+          setLogs((prev) => [...prev, `error|${pkg} — ${data.detail || data.error || t('common.error')}`]);
         } else if (data.imported === 0) {
           ok++;
-          setLogs((prev) => [...prev, `success|${pkg} — déjà dans le dépôt`]);
+          setLogs((prev) => [...prev, `success|${pkg} — ${t('import.batch.alreadyInRepo')}`]);
         } else {
           ok++;
-          setLogs((prev) => [...prev, `success|${pkg} — ${data.imported} paquet(s) ajouté(s)`]);
+          setLogs((prev) => [...prev, `success|${pkg} — ${t('import.batch.addedCount', { count: data.imported })}`]);
         }
       } catch (e) {
         errors++;
         setLogs((prev) => [...prev, `error|${pkg} — ${e.message}`]);
       }
     }
-    setLogs((prev) => [...prev, `done|Terminé — ${ok} OK, ${errors} erreur(s)`]);
+    setLogs((prev) => [...prev, `done|${t('import.batch.done', { ok, errors })}`]);
     setDone(true);
     setRunning(false);
   };
@@ -527,12 +530,12 @@ function BatchImportTab() {
   return (
     <div className="space-y-6 p-6">
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
-        Entrez un paquet par ligne (ou séparés par des virgules). Maximum 50 paquets par import.
+        {t('import.batch.infoBox')}
       </div>
 
       {/* Distribution */}
       <div>
-        <p className="text-sm font-medium text-gray-700 mb-2">Distribution cible</p>
+        <p className="text-sm font-medium text-gray-700 mb-2">{t('import.search.targetDistribution')}</p>
         <div className="flex flex-wrap gap-2">
           {DISTRIBUTIONS.map((d) => (
             <button key={d.codename} type="button"
@@ -548,7 +551,7 @@ function BatchImportTab() {
 
       <div className="space-y-3">
         <label className="block text-sm font-medium text-gray-700">
-          Liste de paquets
+          {t('import.batch.textareaLabel')}
         </label>
         <textarea
           value={input}
@@ -559,19 +562,19 @@ function BatchImportTab() {
         />
         <div className="flex items-center justify-between">
           <p className="text-xs text-gray-500">
-            {input.split(/[\n,]+/).filter((s) => s.trim()).length} paquet(s) détecté(s)
+            {t('import.batch.detected', { count: input.split(/[\n,]+/).filter((s) => s.trim()).length })}
           </p>
           <button
             onClick={handleBatch}
             disabled={running || !input.trim()}
             className="px-5 py-2.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
           >
-            {running ? "Import en cours..." : "Lancer l'import"}
+            {running ? t('import.batch.importRunning') : t('import.batch.launchImport')}
           </button>
         </div>
       </div>
 
-      <LogBox logs={logs} running={running} done={done} logsRef={logsRef} label="Logs d'import" />
+      <LogBox logs={logs} running={running} done={done} logsRef={logsRef} label={t('import.search.logHeader')} />
     </div>
   );
 }
@@ -579,9 +582,11 @@ function BatchImportTab() {
 // ─── Tab: Synchronisation ─────────────────────────────────────────────────────
 
 function SyncTab() {
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language?.startsWith('fr') ? 'fr-FR' : 'en-GB';
   const [sources, setSources] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { logs, running, done, startWithBody } = useSSEStream();
+  const { logs, running, done, startWithBody } = useSSEStream(t);
   const logsRef = useRef(null);
 
   useEffect(() => {
@@ -604,7 +609,7 @@ function SyncTab() {
       const data = await getImportSyncStatus();
       setSources(data.sources || []);
     } catch {
-      toast.error("Impossible de charger le statut de synchronisation");
+      toast.error(t('import.sync.loadError'));
     } finally {
       setLoading(false);
     }
@@ -617,56 +622,51 @@ function SyncTab() {
   const totalPackages = sources.reduce((acc, s) => acc + (s.pkg_count || 0), 0);
 
   const statusBadge = (s) => {
-    if (s.status === "ok") return <Badge color="green">Synchronisé</Badge>;
-    if (s.status === "error") return <Badge color="red">Erreur</Badge>;
-    return <Badge color="gray">Jamais synchronisé</Badge>;
+    if (s.status === "ok") return <Badge color="green">{t('import.sync.status.synced')}</Badge>;
+    if (s.status === "error") return <Badge color="red">{t('import.sync.status.error')}</Badge>;
+    return <Badge color="gray">{t('import.sync.status.neverSynced')}</Badge>;
   };
 
   return (
     <div className="space-y-6 p-6">
-      {/* Bandeau d'information */}
+      {/* Info banner */}
       <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-sm text-blue-800">
         <svg className="w-4 h-4 mt-0.5 shrink-0 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
         </svg>
-        <span>
-          <strong>Toutes les sources sont actives.</strong> L'icône{" "}
-          <svg className="w-3 h-3 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>{" "}
-          indique que la source contient des avis de sécurité (CVE/ALSA/RLSA).
-          Cliquez sur <strong>Synchroniser tout</strong> pour indexer les paquets.
-        </span>
+        <span>{t('import.sync.allSourcesActive')}</span>
       </div>
 
-      {/* Résumé */}
+      {/* Summary */}
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wider">Sources</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wider">{t('import.sync.sources')}</p>
           <p className="text-2xl font-bold text-gray-900 mt-1">{sources.length}</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wider">Paquets indexés</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wider">{t('import.sync.indexedPackages')}</p>
           <p className="text-2xl font-bold text-gray-900 mt-1">
-            {totalPackages.toLocaleString()}
+            {totalPackages.toLocaleString(dateLocale)}
           </p>
         </div>
         <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wider">Statut global</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wider">{t('import.sync.globalStatus')}</p>
           <p className="text-2xl font-bold mt-1">
             {sources.every((s) => s.status === "ok") ? (
-              <span className="text-green-600">OK</span>
+              <span className="text-green-600">{t('import.sync.status.synced')}</span>
             ) : sources.some((s) => s.status === "ok") ? (
-              <span className="text-yellow-600">Partiel</span>
+              <span className="text-yellow-600">{t('import.sync.partial')}</span>
             ) : (
-              <span className="text-gray-500">Non synchronisé</span>
+              <span className="text-gray-500">{t('import.sync.notSynced')}</span>
             )}
           </p>
         </div>
       </div>
 
-      {/* Tableau des sources */}
+      {/* Sources table */}
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-200">
-          <h3 className="text-sm font-semibold text-gray-800">Sources RPM</h3>
+          <h3 className="text-sm font-semibold text-gray-800">{t('import.sync.tableHeaders.source')}</h3>
           <button
             onClick={handleSyncAll}
             disabled={running}
@@ -676,20 +676,20 @@ function SyncTab() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                 d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            {running ? "Synchronisation..." : "Synchroniser tout"}
+            {running ? t('import.sync.synchronizing') : t('import.sync.synchronizeAll')}
           </button>
         </div>
 
         {loading ? (
-          <div className="p-8 text-center text-gray-400 text-sm">Chargement...</div>
+          <div className="p-8 text-center text-gray-400 text-sm">{t('common.loading')}</div>
         ) : (
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-5 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Source</th>
-                <th className="px-5 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Paquets</th>
-                <th className="px-5 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Dernière sync</th>
-                <th className="px-5 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Statut</th>
+                <th className="px-5 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('import.sync.tableHeaders.source')}</th>
+                <th className="px-5 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('import.sync.tableHeaders.packages')}</th>
+                <th className="px-5 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('import.sync.tableHeaders.lastSync')}</th>
+                <th className="px-5 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('import.sync.tableHeaders.status')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -698,7 +698,7 @@ function SyncTab() {
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-2">
                       {s.security && (
-                        <span title="Source de sécurité (CVE/patches critiques)">
+                        <span title={t('import.sync.securitySource')}>
                           <svg className="w-3 h-3 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
                         </span>
                       )}
@@ -709,17 +709,17 @@ function SyncTab() {
                     </div>
                   </td>
                   <td className="px-5 py-3 text-sm text-gray-700">
-                    {(s.pkg_count || 0).toLocaleString()}
+                    {(s.pkg_count || 0).toLocaleString(dateLocale)}
                   </td>
                   <td className="px-5 py-3 text-xs text-gray-500">
                     {s.last_sync
-                      ? new Date(s.last_sync).toLocaleString("fr-FR")
+                      ? new Date(s.last_sync).toLocaleString(dateLocale)
                       : "—"}
                   </td>
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-2 flex-wrap">
                       {statusBadge(s)}
-                      {s.security && <Badge color="red">Sécurité</Badge>}
+                      {s.security && <Badge color="red">{t('import.sync.security')}</Badge>}
                     </div>
                     {s.error && (
                       <p className="text-xs text-red-500 mt-0.5 max-w-xs truncate">{s.error}</p>
@@ -732,14 +732,16 @@ function SyncTab() {
         )}
       </div>
 
-      <LogBox logs={logs} running={running} done={done} logsRef={logsRef} label="Progression de la synchronisation" />
+      <LogBox logs={logs} running={running} done={done} logsRef={logsRef} label={t('import.sync.syncProgress')} />
     </div>
   );
 }
 
-// ─── Tab: Groupes d'import ────────────────────────────────────────────────────
+// ─── Tab: Import groups ───────────────────────────────────────────────────────
 
 function GroupsTab() {
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language?.startsWith('fr') ? 'fr-FR' : 'en-GB';
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(null);
@@ -748,22 +750,22 @@ function GroupsTab() {
   const loadGroups = () => {
     getImportGroups()
       .then((d) => setGroups(d.groups || []))
-      .catch(() => toast.error("Impossible de charger les groupes"))
+      .catch(() => toast.error(t('import.groups.loadError')))
       .finally(() => setLoading(false));
   };
 
   useEffect(() => { loadGroups(); }, []);
 
   const handleDelete = async (name) => {
-    if (!window.confirm(`Supprimer le groupe "${name}" et tous ses fichiers ?`)) return;
+    if (!window.confirm(t('import.groups.deleteConfirm', { name }))) return;
     setDeleting(name);
     try {
       await deleteImportGroup(name);
-      toast.success(`Groupe "${name}" supprimé`);
+      toast.success(t('import.groups.deleted', { name }));
       if (expanded === name) setExpanded(null);
       loadGroups();
     } catch {
-      toast.error("Impossible de supprimer le groupe");
+      toast.error(t('import.groups.deleteError'));
     } finally {
       setDeleting(null);
     }
@@ -775,7 +777,7 @@ function GroupsTab() {
     return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
   };
 
-  if (loading) return <div className="text-center text-gray-400 text-sm py-12">Chargement...</div>;
+  if (loading) return <div className="text-center text-gray-400 text-sm py-12">{t('common.loading')}</div>;
 
   if (groups.length === 0) {
     return (
@@ -784,8 +786,8 @@ function GroupsTab() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
             d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
         </svg>
-        <p className="text-sm">Aucun groupe d'import pour le moment.</p>
-        <p className="text-xs mt-1">Les paquets importés apparaîtront ici, regroupés par paquet principal.</p>
+        <p className="text-sm">{t('import.groups.noGroups')}</p>
+        <p className="text-xs mt-1">{t('import.groups.noGroupsHint')}</p>
       </div>
     );
   }
@@ -793,11 +795,11 @@ function GroupsTab() {
   return (
     <div className="space-y-3">
       <p className="text-sm text-gray-500">
-        {groups.length} groupe(s) — chaque groupe contient le paquet importé et toutes ses dépendances.
+        {t('import.groups.count', { count: groups.length })}
       </p>
       {groups.map((g) => (
         <div key={g.name} className="border border-gray-200 rounded-lg overflow-hidden">
-          {/* En-tête du groupe */}
+          {/* Group header */}
           <button
             onClick={() => setExpanded(expanded === g.name ? null : g.name)}
             className="w-full flex items-center justify-between px-5 py-4 bg-white hover:bg-gray-50 transition-colors"
@@ -812,8 +814,8 @@ function GroupsTab() {
               <div className="text-left">
                 <p className="text-sm font-semibold text-gray-900">{g.name}</p>
                 <p className="text-xs text-gray-400">
-                  {g.package_count} fichier(s) · {fmt(g.total_size_bytes)} ·{" "}
-                  importé le {new Date(g.imported_at).toLocaleDateString("fr-FR")}
+                  {t('import.groups.fileCount', { count: g.package_count })} · {fmt(g.total_size_bytes)} ·{" "}
+                  {t('import.groups.importedOn', { date: new Date(g.imported_at).toLocaleDateString(dateLocale) })}
                 </p>
               </div>
             </div>
@@ -823,7 +825,7 @@ function GroupsTab() {
                 onClick={(e) => { e.stopPropagation(); handleDelete(g.name); }}
                 disabled={deleting === g.name}
                 className="p-1.5 text-red-400 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors disabled:opacity-40"
-                title="Supprimer ce groupe"
+                title={t('import.groups.deleteTitle')}
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -839,14 +841,14 @@ function GroupsTab() {
             </div>
           </button>
 
-          {/* Liste des fichiers */}
+          {/* File list */}
           {expanded === g.name && (
             <div className="border-t border-gray-100 bg-gray-50">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="px-5 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Fichier</th>
-                    <th className="px-5 py-2 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Taille</th>
+                    <th className="px-5 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('import.groups.file')}</th>
+                    <th className="px-5 py-2 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('import.groups.size')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -857,7 +859,7 @@ function GroupsTab() {
                           {p.filename}
                         </span>
                         {p.filename.startsWith(g.name + "_") && (
-                          <span className="ml-2 text-xs text-blue-500">(principal)</span>
+                          <span className="ml-2 text-xs text-blue-500">{t('import.groups.main')}</span>
                         )}
                       </td>
                       <td className="px-5 py-2.5 text-right text-xs text-gray-500 font-mono">
@@ -875,29 +877,30 @@ function GroupsTab() {
   );
 }
 
-// ─── Page principale ──────────────────────────────────────────────────────────
-
-const TABS = [
-  { id: "search", label: "Recherche & Import", icon: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" },
-  { id: "batch", label: "Import par lot", icon: "M4 6h16M4 10h16M4 14h16M4 18h16" },
-  { id: "sync", label: "Synchronisation", icon: "M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" },
-  { id: "groups", label: "Groupes d'import", icon: "M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" },
-];
+// ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function ImportPage() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("search");
+
+  const TABS = [
+    { id: "search", label: t('import.tabs.search'), icon: "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" },
+    { id: "batch", label: t('import.tabs.batch'), icon: "M4 6h16M4 10h16M4 14h16M4 18h16" },
+    { id: "sync", label: t('import.tabs.sync'), icon: "M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" },
+    { id: "groups", label: t('import.tabs.groups'), icon: "M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" },
+  ];
 
   return (
     <div className="space-y-6 p-6">
-      {/* En-tête */}
+      {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Import depuis internet</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('import.title')}</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Recherchez, résolvez les dépendances et importez des paquets RPM directement dans votre dépôt privé.
+          {t('import.description')}
         </p>
       </div>
 
-      {/* Onglets */}
+      {/* Tabs */}
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex gap-6">
           {TABS.map((tab) => (
@@ -919,7 +922,7 @@ export default function ImportPage() {
         </nav>
       </div>
 
-      {/* Contenu des onglets */}
+      {/* Tab content */}
       <div>
         {activeTab === "search" && <SearchImportTab />}
         {activeTab === "batch" && <BatchImportTab />}

@@ -3,6 +3,7 @@ import { Responsive, WidthProvider } from "react-grid-layout";
 import { getDashboardStats, getDashboardHistory } from "../api";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 import {
@@ -20,8 +21,8 @@ const fmtBytes = b => {
   if (b < 1073741824) return `${(b/1048576).toFixed(1)} MB`;
   return `${(b/1073741824).toFixed(2)} GB`;
 };
-const fmtTs = iso => iso
-  ? new Date(iso).toLocaleString("fr-FR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" })
+const fmtTs = (iso, locale) => iso
+  ? new Date(iso).toLocaleString(locale, { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" })
   : "—";
 
 // ─── Layout par défaut ────────────────────────────────────────────────────────
@@ -69,15 +70,6 @@ const SEV = [
   { key:"negligible", label:"NEG.",     color:T.muted,  bg:"#F8FAFC" },
 ];
 
-const STATUS_META = {
-  pending_review:   { label:"En révision",   color:T.orange },
-  blocked:          { label:"Bloqués",        color:T.red },
-  quarantined:      { label:"Quarantaine",    color:T.purple },
-  accepted_risk:    { label:"Risque accepté", color:T.green },
-  exception:        { label:"Exception",      color:T.blue },
-  upgrade_required: { label:"Upgrade requis", color:T.teal },
-};
-
 // ─── Enterprise lock overlay ──────────────────────────────────────────────────
 function EnterpriseLock({ children, small = false }) {
   return (
@@ -105,7 +97,7 @@ function EnterpriseLock({ children, small = false }) {
 }
 
 // ─── Wrapper Panel ────────────────────────────────────────────────────────────
-function Panel({ title, children, onHeaderClick, badge, icon, enterprise = false }) {
+function Panel({ title, children, onHeaderClick, badge, icon, enterprise = false, seeMoreLabel }) {
   return (
     <div style={{
       background: T.panel,
@@ -150,7 +142,7 @@ function Panel({ title, children, onHeaderClick, badge, icon, enterprise = false
             fontSize:"11px", fontWeight:600, color: T.blue,
             background:"none", border:"none", cursor:"pointer", padding:0,
           }}>
-            Voir →
+            {seeMoreLabel || "See →"}
           </button>
         )}
       </div>
@@ -223,9 +215,10 @@ function StatPanel({ label, value, sub, color, iconPath, onClick, enterprise = f
 
 // ─── CVE Posture ──────────────────────────────────────────────────────────────
 function CvePosture({ posture }) {
+  const { t } = useTranslation();
   if (!posture || posture.scanned === 0) return (
     <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:"100%", color: T.muted, fontSize:12 }}>
-      Aucun paquet scanné
+      {t('dashboard.noPackagesScanned')}
     </div>
   );
   const total = SEV.reduce((s,{key})=>s+(posture[key]||0),0);
@@ -234,7 +227,7 @@ function CvePosture({ posture }) {
     <div style={{ height:"100%", display:"flex", flexDirection:"column", gap:8 }}>
       <div style={{ display:"flex", alignItems:"baseline", gap:8 }}>
         <span style={{ fontSize:28, fontWeight:800, color: total>0?T.red:T.green, fontVariantNumeric:"tabular-nums" }}>{total}</span>
-        <span style={{ fontSize:11, color:T.muted }}>CVE · {posture.scanned}/{posture.total} analysés</span>
+        <span style={{ fontSize:11, color:T.muted }}>{t('dashboard.cvePostureAnalysed', { scanned: posture.scanned, total: posture.total })}</span>
       </div>
       <div style={{ flex:1, display:"flex", flexDirection:"column", justifyContent:"space-around" }}>
         {SEV.map(({key,label,color,bg})=>{
@@ -256,9 +249,10 @@ function CvePosture({ posture }) {
 }
 
 // ─── Security Review ──────────────────────────────────────────────────────────
-function SecurityReview({ review, navigate }) {
+function SecurityReview({ review, navigate, statusMeta }) {
+  const { t } = useTranslation();
   if (!review) return null;
-  const counts = Object.entries(STATUS_META)
+  const counts = Object.entries(statusMeta)
     .map(([key,meta])=>({key,meta,count:review[key]||0}))
     .filter(({count})=>count>0);
   const expiring = review.expiring_soon||[];
@@ -268,7 +262,7 @@ function SecurityReview({ review, navigate }) {
       <svg viewBox="0 0 24 24" fill="none" stroke={T.green} strokeWidth={1.5} style={{width:32,height:32,opacity:.7}}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
       </svg>
-      <span style={{fontSize:12}}>Aucune action requise</span>
+      <span style={{fontSize:12}}>{t('dashboard.noActionRequired')}</span>
     </div>
   );
 
@@ -290,7 +284,7 @@ function SecurityReview({ review, navigate }) {
       {expiring.length>0 && (
         <div style={{ borderTop:`1px solid ${T.border}`, paddingTop:10 }}>
           <p style={{ fontSize:"10px", fontWeight:700, color:T.orange, marginBottom:6, letterSpacing:"0.05em", textTransform:"uppercase", display:"flex", alignItems:"center", gap:4 }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{width:12,height:12}}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Expirantes
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{width:12,height:12}}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> {t('dashboard.expiring')}
           </p>
           {expiring.slice(0,4).map((item,i)=>(
             <div key={i} style={{
@@ -302,7 +296,7 @@ function SecurityReview({ review, navigate }) {
             }}>
               <span style={{ fontFamily:"monospace", fontWeight:600, color:T.text }}>{item.package}</span>
               <span style={{ fontWeight:700, color:item.expired?T.red:T.orange }}>
-                {item.expired?"Expirée":(`J-${item.remaining_days}`)}
+                {item.expired ? t('dashboard.expired') : t('dashboard.expiresInDays', { days: item.remaining_days })}
               </span>
             </div>
           ))}
@@ -314,10 +308,11 @@ function SecurityReview({ review, navigate }) {
 
 // ─── ClamAV ───────────────────────────────────────────────────────────────────
 function ClamavPanel({ clamav }) {
+  const { t } = useTranslation();
   if (!clamav) return null;
   const ok = clamav.available && clamav.daemon_running;
   const statusColor = ok ? T.green : clamav.available ? T.yellow : T.red;
-  const statusLabel = ok ? "ACTIF" : clamav.available ? "Sans daemon" : "INACTIF";
+  const statusLabel = ok ? t('dashboard.clamav.active') : clamav.available ? t('dashboard.clamav.noDaemon') : t('dashboard.clamav.inactive');
   const pct = ok ? 100 : clamav.available ? 60 : 15;
   const r = 42, circ = 2*Math.PI*r;
 
@@ -347,6 +342,7 @@ function ClamavPanel({ clamav }) {
 
 // ─── Activity — Bar chart ─────────────────────────────────────────────────────
 function ActivityChart({ activity }) {
+  const { t } = useTranslation();
   if (!activity?.length) return null;
   const max = Math.max(...activity.map(d=>d.imports+d.failures),1);
   const BAR_H = 90;
@@ -356,11 +352,11 @@ function ActivityChart({ activity }) {
       <div style={{ display:"flex", gap:16, fontSize:11 }}>
         <span style={{ display:"flex", alignItems:"center", gap:5 }}>
           <span style={{ width:10, height:10, borderRadius:2, background:T.blue, display:"inline-block" }}/>
-          <span style={{ color:T.sub }}>Imports</span>
+          <span style={{ color:T.sub }}>{t('dashboard.chart.imports')}</span>
         </span>
         <span style={{ display:"flex", alignItems:"center", gap:5 }}>
           <span style={{ width:10, height:10, borderRadius:2, background:T.red, display:"inline-block" }}/>
-          <span style={{ color:T.sub }}>Échecs</span>
+          <span style={{ color:T.sub }}>{t('dashboard.chart.failures')}</span>
         </span>
       </div>
 
@@ -410,13 +406,13 @@ function ActivityChart({ activity }) {
           <div style={{ fontSize:18, fontWeight:800, color:T.blue, fontVariantNumeric:"tabular-nums" }}>
             {activity.reduce((s,d)=>s+d.imports,0)}
           </div>
-          <div style={{ fontSize:10, color:T.muted }}>imports / 7j</div>
+          <div style={{ fontSize:10, color:T.muted }}>{t('dashboard.imports7d')}</div>
         </div>
         <div>
           <div style={{ fontSize:18, fontWeight:800, color:T.red, fontVariantNumeric:"tabular-nums" }}>
             {activity.reduce((s,d)=>s+d.failures,0)}
           </div>
-          <div style={{ fontSize:10, color:T.muted }}>échecs / 7j</div>
+          <div style={{ fontSize:10, color:T.muted }}>{t('dashboard.failures7d')}</div>
         </div>
       </div>
     </div>
@@ -427,12 +423,13 @@ function ActivityChart({ activity }) {
 const ALERT_COLOR = { deps_missing:T.yellow, sla_warning:T.orange, sla_expired:T.red, security:T.red };
 
 function AlertsList({ alerts }) {
+  const { t } = useTranslation();
   if (!alerts?.length) return (
     <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", height:"100%", gap:8 }}>
       <svg viewBox="0 0 24 24" fill="none" stroke={T.green} strokeWidth={1.5} style={{width:32,height:32,opacity:.6}}>
         <polyline strokeLinecap="round" strokeLinejoin="round" points="20 6 9 17 4 12"/>
       </svg>
-      <span style={{ fontSize:12, color:T.green }}>Tout nominal</span>
+      <span style={{ fontSize:12, color:T.green }}>{t('dashboard.allNominal')}</span>
     </div>
   );
   return (
@@ -460,16 +457,23 @@ function AlertsList({ alerts }) {
 // ─── Imports récents ──────────────────────────────────────────────────────────
 const ACTION_COLOR = { UPLOAD:T.blue, IMPORT:T.teal, PENDING_REVIEW:T.orange, SECURITY_DECISION:T.purple };
 
-function ImportsList({ imports }) {
+function ImportsList({ imports, fmtTsFn }) {
+  const { t } = useTranslation();
   if (!imports?.length) return (
-    <div style={{ textAlign:"center", padding:24, color:T.muted, fontSize:12 }}>Aucun import.</div>
+    <div style={{ textAlign:"center", padding:24, color:T.muted, fontSize:12 }}>{t('dashboard.noImports')}</div>
   );
   return (
     <div style={{ overflowY:"auto", height:"100%" }}>
       <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
         <thead>
           <tr style={{ borderBottom:`1px solid ${T.border}` }}>
-            {["Paquet","Version","Action","Date","Statut"].map(h=>(
+            {[
+              t('dashboard.table.package'),
+              t('dashboard.table.version'),
+              t('dashboard.table.action'),
+              t('dashboard.table.date'),
+              t('dashboard.table.status'),
+            ].map(h=>(
               <th key={h} style={{ padding:"6px 12px", textAlign:"left", fontSize:10, fontWeight:700, letterSpacing:"0.05em", textTransform:"uppercase", color:T.muted }}>
                 {h}
               </th>
@@ -490,7 +494,7 @@ function ImportsList({ imports }) {
                     {e.action||"—"}
                   </span>
                 </td>
-                <td style={{ padding:"8px 12px", fontFamily:"monospace", color:T.muted }}>{fmtTs(e.timestamp)}</td>
+                <td style={{ padding:"8px 12px", fontFamily:"monospace", color:T.muted }}>{fmtTsFn(e.timestamp)}</td>
                 <td style={{ padding:"8px 12px" }}>
                   <span style={{ display:"inline-block", width:7, height:7, borderRadius:"50%", background:e.result==="SUCCESS"?T.green:T.red }}/>
                 </td>
@@ -511,9 +515,10 @@ const fmtDay = iso => {
 };
 
 function HistoryImportsChart({ data }) {
+  const { t } = useTranslation();
   if (!data?.length) return (
     <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:"100%", color:T.muted, fontSize:12 }}>
-      Pas encore de données historiques
+      {t('dashboard.noHistoricalData')}
     </div>
   );
   return (
@@ -537,17 +542,18 @@ function HistoryImportsChart({ data }) {
           labelFormatter={v => v}
         />
         <Legend iconType="circle" iconSize={7} wrapperStyle={{ fontSize:11, paddingTop:4 }} />
-        <Area type="monotone" dataKey="imports"  name="Imports réussis" stroke={T.blue}   strokeWidth={2} fill="url(#gradImports)" dot={false} activeDot={{ r:4 }} />
-        <Area type="monotone" dataKey="failures" name="Échecs"          stroke={T.red}    strokeWidth={1.5} fill="url(#gradFail)"    dot={false} strokeDasharray="4 2" />
+        <Area type="monotone" dataKey="imports"  name={t('dashboard.chart.successfulImports')} stroke={T.blue}   strokeWidth={2} fill="url(#gradImports)" dot={false} activeDot={{ r:4 }} />
+        <Area type="monotone" dataKey="failures" name={t('dashboard.chart.failures')}          stroke={T.red}    strokeWidth={1.5} fill="url(#gradFail)"    dot={false} strokeDasharray="4 2" />
       </AreaChart>
     </ResponsiveContainer>
   );
 }
 
 function HistoryDecisionsChart({ data }) {
+  const { t } = useTranslation();
   if (!data?.length) return (
     <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:"100%", color:T.muted, fontSize:12 }}>
-      Pas encore de données
+      {t('dashboard.noData')}
     </div>
   );
   // Ne garder que les 14 derniers jours pour ce graphique compact
@@ -563,8 +569,8 @@ function HistoryDecisionsChart({ data }) {
           labelFormatter={v => v}
         />
         <Legend iconType="circle" iconSize={7} wrapperStyle={{ fontSize:11, paddingTop:4 }} />
-        <Bar dataKey="imports"   name="Imports"   fill={T.blue}   radius={[3,3,0,0]} maxBarSize={20} />
-        <Bar dataKey="decisions" name="Décisions" fill={T.purple} radius={[3,3,0,0]} maxBarSize={20} />
+        <Bar dataKey="imports"   name={t('dashboard.chart.imports')}    fill={T.blue}   radius={[3,3,0,0]} maxBarSize={20} />
+        <Bar dataKey="decisions" name={t('dashboard.chart.decisions')}  fill={T.purple} radius={[3,3,0,0]} maxBarSize={20} />
       </BarChart>
     </ResponsiveContainer>
   );
@@ -572,6 +578,18 @@ function HistoryDecisionsChart({ data }) {
 
 // ─── Page principale ──────────────────────────────────────────────────────────
 export default function DashboardPage() {
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language?.startsWith('fr') ? 'fr-FR' : 'en-GB';
+
+  const STATUS_META = {
+    pending_review:   { label: t('dashboard.statusLabels.pendingReview'),  color:T.orange },
+    blocked:          { label: t('dashboard.statusLabels.blocked'),         color:T.red },
+    quarantined:      { label: t('dashboard.statusLabels.quarantine'),      color:T.purple },
+    accepted_risk:    { label: t('dashboard.statusLabels.riskAccepted'),    color:T.green },
+    exception:        { label: t('dashboard.statusLabels.exception'),       color:T.blue },
+    upgrade_required: { label: t('dashboard.statusLabels.upgradeRequired'), color:T.teal },
+  };
+
   const [stats, setStats]           = useState(null);
   const [history, setHistory]       = useState(null);
   const [loading, setLoading]       = useState(true);
@@ -593,16 +611,16 @@ export default function DashboardPage() {
       setStats(data);
       setHistory(hist?.history || []);
       setLast(new Date());
-      if (!silent) toast.success("Tableau de bord actualisé");
-    } catch { if(!silent) toast.error("Impossible de charger le tableau de bord"); }
+      if (!silent) toast.success(t('dashboard.refreshed'));
+    } catch { if(!silent) toast.error(t('dashboard.loadError')); }
     finally { setLoading(false); setRefreshing(false); }
-  }, []);
+  }, [t]);
 
   const resetLayout = useCallback(()=>{
     setLayouts(DEFAULT_LAYOUTS);
     localStorage.removeItem(STORAGE_KEY);
-    toast.success("Disposition réinitialisée");
-  }, []);
+    toast.success(t('dashboard.layoutReset'));
+  }, [t]);
 
   useEffect(()=>{ load(true); const id=setInterval(()=>load(true),30000); return()=>clearInterval(id); },[load]);
 
@@ -610,6 +628,8 @@ export default function DashboardPage() {
     setLayouts(all);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
   },[]);
+
+  const fmtTsWithLocale = useCallback((iso) => fmtTs(iso, dateLocale), [dateLocale]);
 
   if (loading) return (
     <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:200 }}>
@@ -629,27 +649,27 @@ export default function DashboardPage() {
       {/* ── Header ── */}
       <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:16, gap:12 }}>
         <div>
-          <h1 style={{ fontSize:18, fontWeight:800, color:T.text, margin:0 }}>Tableau de bord</h1>
+          <h1 style={{ fontSize:18, fontWeight:800, color:T.text, margin:0 }}>{t('dashboard.title')}</h1>
           <p style={{ fontSize:11, color:T.muted, margin:"3px 0 0" }}>
-            {lastRefresh ? `Actualisé à ${lastRefresh.toLocaleTimeString("fr-FR")}` : "Chargement…"}
-            <span style={{ marginLeft:8, opacity:.6 }}>· Glisser les panneaux pour réorganiser</span>
+            {lastRefresh ? t('dashboard.refreshedAt', { time: lastRefresh.toLocaleTimeString(dateLocale) }) : t('dashboard.loading')}
+            <span style={{ marginLeft:8, opacity:.6 }}>· {t('dashboard.dragHint')}</span>
           </p>
         </div>
         <div style={{ display:"flex", gap:8, flexShrink:0 }}>
           <button onClick={resetLayout}
-            title="Remettre les panneaux à leur position d'origine"
+            title={t('dashboard.resetLayout')}
             style={{ fontSize:11, padding:"6px 12px", borderRadius:8, border:`1px solid ${T.border}`, background:T.panel, color:T.sub, cursor:"pointer", fontWeight:500 }}>
-            Réinitialiser disposition
+            {t('dashboard.resetLayout')}
           </button>
           <button onClick={()=>load(false)} disabled={refreshing}
-            title="Recharger les données depuis le serveur"
+            title={t('dashboard.refresh')}
             style={{ fontSize:11, padding:"6px 12px", borderRadius:8, border:`1px solid ${T.blue}40`, background:T.blue+"10", color:T.blue, cursor:refreshing?"not-allowed":"pointer", fontWeight:600, display:"flex", alignItems:"center", gap:5, opacity:refreshing?0.7:1 }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"
               style={{width:13,height:13, animation:refreshing?"spin 0.7s linear infinite":"none"}}>
               <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
               <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
             </svg>
-            Actualiser
+            {t('dashboard.refresh')}
           </button>
         </div>
       </div>
@@ -668,20 +688,20 @@ export default function DashboardPage() {
         isDraggable
       >
         <div key="stat-packages">
-          <StatPanel label="Paquets" value={packages.total} sub={fmtBytes(packages.total_size_bytes)} color={T.blue}
+          <StatPanel label={t('dashboard.panels.packages')} value={packages.total} sub={fmtBytes(packages.total_size_bytes)} color={T.blue}
             iconPath="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z M3.27 6.96 12 12.01 20.73 6.96 M12 22.08 12 12"/>
         </div>
 
         <div key="stat-imports">
-          <StatPanel label="Imports aujourd'hui" value={packages.imports_today} sub="ce jour" color={T.green}
+          <StatPanel label={t('dashboard.panels.importsToday')} value={packages.imports_today} sub={t('dashboard.today')} color={T.green}
             iconPath="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4 M7 10 12 15 17 10 M12 15 12 3"/>
         </div>
 
         <div key="stat-security">
           <StatPanel
-            label="Révision RSSI"
+            label={t('dashboard.panels.cisoReview')}
             value={needsAction>0 ? needsAction : (security_review?.total_decisions||0)}
-            sub={needsAction>0 ? "action(s) requise(s)" : "décision(s) active(s)"}
+            sub={needsAction>0 ? t('dashboard.actionsRequired') : t('dashboard.activeDecisions')}
             color={needsAction>0 ? T.orange : T.indigo}
             onClick={()=>navigate("/security")}
             enterprise
@@ -690,14 +710,14 @@ export default function DashboardPage() {
 
         <div key="stat-alerts">
           <StatPanel
-            label="Alertes" value={alerts.length}
-            sub={alerts.length===0 ? "Tout nominal" : "à traiter"}
+            label={t('dashboard.panels.alerts')} value={alerts.length}
+            sub={alerts.length===0 ? t('dashboard.allNominal') : t('dashboard.toHandle')}
             color={alerts.length>0 ? T.red : T.green}
             iconPath="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z M12 9 12 13 M12 17 12.01 17"/>
         </div>
 
         <div key="cve-posture">
-          <Panel title="Posture CVE — Grype" enterprise icon={
+          <Panel title={t('dashboard.panels.cvePosture')} enterprise icon={
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} style={{width:13,height:13}}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
             </svg>}>
@@ -706,16 +726,16 @@ export default function DashboardPage() {
         </div>
 
         <div key="security-review">
-          <Panel title="Révision RSSI" enterprise badge={needsAction} onHeaderClick={()=>navigate("/security")} icon={
+          <Panel title={t('dashboard.panels.cisoReview')} enterprise badge={needsAction} onHeaderClick={()=>navigate("/security")} seeMoreLabel={t('dashboard.seeMore')} icon={
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} style={{width:13,height:13}}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>}>
-            <SecurityReview review={security_review} navigate={navigate}/>
+            <SecurityReview review={security_review} navigate={navigate} statusMeta={STATUS_META}/>
           </Panel>
         </div>
 
         <div key="clamav">
-          <Panel title="ClamAV — Antivirus" icon={
+          <Panel title={t('dashboard.panels.clamav')} icon={
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} style={{width:13,height:13}}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
             </svg>}>
@@ -724,7 +744,7 @@ export default function DashboardPage() {
         </div>
 
         <div key="history-imports">
-          <Panel title="Historique — Imports & Échecs (30 jours)" icon={
+          <Panel title={t('dashboard.panels.historyImports')} icon={
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} style={{width:13,height:13}}>
               <polyline strokeLinecap="round" strokeLinejoin="round" points="22 12 18 12 15 21 9 3 6 12 2 12"/>
             </svg>}>
@@ -733,7 +753,7 @@ export default function DashboardPage() {
         </div>
 
         <div key="history-decisions">
-          <Panel title="Imports & Décisions (14j)" icon={
+          <Panel title={t('dashboard.panels.historyDecisions')} icon={
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} style={{width:13,height:13}}>
               <rect strokeLinecap="round" strokeLinejoin="round" x="3" y="3" width="18" height="18" rx="2"/>
               <path d="M3 9h18M9 21V9"/>
@@ -743,7 +763,7 @@ export default function DashboardPage() {
         </div>
 
         <div key="activity">
-          <Panel title="Activité — 7 derniers jours" icon={
+          <Panel title={t('dashboard.panels.activityWeek')} icon={
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} style={{width:13,height:13}}>
               <polyline strokeLinecap="round" strokeLinejoin="round" points="22 12 18 12 15 21 9 3 6 12 2 12"/>
             </svg>}>
@@ -752,7 +772,7 @@ export default function DashboardPage() {
         </div>
 
         <div key="alerts">
-          <Panel title="Alertes système" badge={alerts.length} icon={
+          <Panel title={t('dashboard.panels.systemAlerts')} badge={alerts.length} icon={
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} style={{width:13,height:13}}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/>
             </svg>}>
@@ -761,12 +781,12 @@ export default function DashboardPage() {
         </div>
 
         <div key="imports">
-          <Panel title="Activité récente — imports" icon={
+          <Panel title={t('dashboard.panels.recentImports')} icon={
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} style={{width:13,height:13}}>
               <polyline strokeLinecap="round" strokeLinejoin="round" points="9 11 12 14 22 4"/>
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
             </svg>}>
-            <ImportsList imports={recent_imports}/>
+            <ImportsList imports={recent_imports} fmtTsFn={fmtTsWithLocale}/>
           </Panel>
         </div>
       </ResponsiveGridLayout>

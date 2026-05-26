@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import { getClamavStatus, getApiBaseUrl } from "../api";
 import EnterpriseGate from "../components/EnterpriseGate";
@@ -42,6 +43,8 @@ function StatusBadge({ ok, label }) {
 }
 
 export default function SecurityPage() {
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language?.startsWith('fr') ? 'fr-FR' : 'en-GB';
   const [status, setStatus]   = useState(null);
   const [loading, setLoading] = useState(true);
   const [logs, setLogs]       = useState([]);
@@ -65,7 +68,7 @@ export default function SecurityPage() {
       const data = await getClamavStatus();
       setStatus(data);
     } catch {
-      toast.error("Impossible de charger le statut ClamAV");
+      toast.error(t('security.clamav.loadError'));
     } finally {
       setLoading(false);
     }
@@ -82,7 +85,7 @@ export default function SecurityPage() {
       headers: { Authorization: `Bearer ${token}` },
     }).then(async (resp) => {
       if (!resp.ok) {
-        setLogs([`error|Erreur serveur (${resp.status})`]);
+        setLogs([`error|Server error (${resp.status})`]);
         setRunning(false);
         return;
       }
@@ -110,21 +113,68 @@ export default function SecurityPage() {
     });
   };
 
+  const pipelineSteps = [
+    {
+      step: "1",
+      name: t('security.pipeline.steps.format.name'),
+      desc: t('security.pipeline.steps.format.desc'),
+      color: "bg-blue-100 text-blue-700",
+      blocking: true,
+    },
+    {
+      step: "2",
+      name: t('security.pipeline.steps.sha256.name'),
+      desc: t('security.pipeline.steps.sha256.desc'),
+      color: "bg-purple-100 text-purple-700",
+      blocking: true,
+    },
+    {
+      step: "3",
+      name: t('security.pipeline.steps.clamav.name'),
+      desc: t('security.pipeline.steps.clamav.desc'),
+      color: "bg-red-100 text-red-700",
+      blocking: true,
+    },
+    {
+      step: "4",
+      name: t('security.pipeline.steps.gpg.name'),
+      desc: t('security.pipeline.steps.gpg.desc'),
+      color: "bg-yellow-100 text-yellow-700",
+      blocking: false,
+    },
+    {
+      step: "5",
+      name: t('security.pipeline.steps.deps.name'),
+      desc: t('security.pipeline.steps.deps.desc'),
+      color: "bg-green-100 text-green-700",
+      blocking: false,
+      enterprise: false,
+    },
+    {
+      step: "6",
+      name: t('security.pipeline.steps.cve.name'),
+      desc: t('security.pipeline.steps.cve.desc'),
+      color: "bg-gray-100 text-gray-400",
+      blocking: false,
+      enterprise: true,
+    },
+  ];
+
   return (
     <div className="space-y-6 max-w-full p-6">
 
-      {/* En-tête */}
+      {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Sécurité</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('security.title')}</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Antivirus ClamAV et pipeline de validation des paquets RPM.
+          {t('security.subtitle')}
         </p>
       </div>
 
       {/* CVE scanning — Enterprise */}
       <EnterpriseGate feature="security" />
 
-      {/* Carte ClamAV */}
+      {/* ClamAV card */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div className="flex items-center gap-3">
@@ -136,54 +186,54 @@ export default function SecurityPage() {
             </div>
             <div>
               <h2 className="text-sm font-semibold text-gray-900">ClamAV</h2>
-              <p className="text-xs text-gray-400">Antivirus open-source — scan des binaires RPM à l'import</p>
+              <p className="text-xs text-gray-400">{t('security.clamav.scanDescription')}</p>
             </div>
           </div>
           {!loading && status && (
             <div className="flex items-center gap-2">
-              <StatusBadge ok={status.available} label={status.available ? "Actif" : "Inactif"} />
-              <StatusBadge ok={status.daemon_running} label={status.daemon_running ? "Daemon actif" : "Daemon arrêté"} />
+              <StatusBadge ok={status.available} label={status.available ? t('security.clamav.active') : t('security.clamav.inactive')} />
+              <StatusBadge ok={status.daemon_running} label={status.daemon_running ? t('security.clamav.daemonActive') : t('security.clamav.daemonStopped')} />
             </div>
           )}
         </div>
 
         {loading ? (
-          <div className="p-8 text-center text-gray-400 text-sm">Chargement...</div>
+          <div className="p-8 text-center text-gray-400 text-sm">{t('common.loading')}</div>
         ) : !status?.available ? (
           <div className="p-8 text-center text-red-400 text-sm">
-            ClamAV n'est pas disponible dans ce conteneur.
+            {t('security.clamav.unavailable')}
           </div>
         ) : (
           <div className="p-6 space-y-6">
-            {/* Infos version */}
+            {/* Version info */}
             <div className="grid grid-cols-3 gap-4">
               <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Version</p>
+                <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">{t('common.version')}</p>
                 <p className="text-lg font-bold text-gray-900 font-mono">{status.version || "–"}</p>
               </div>
               <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Version DB</p>
+                <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">{t('security.clamav.stats.dbVersion')}</p>
                 <p className="text-lg font-bold text-gray-900 font-mono">{status.db_version || "–"}</p>
               </div>
               <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Date DB</p>
+                <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">{t('security.clamav.stats.dbDate')}</p>
                 <p className="text-sm font-semibold text-gray-700">{status.db_date || "–"}</p>
               </div>
             </div>
 
-            {/* Fichiers de la DB */}
+            {/* DB files */}
             {status.db_files?.length > 0 && (
               <div>
                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                  Fichiers de signatures ({status.db_files.length})
+                  {t('security.clamav.dbFiles.title', { count: status.db_files.length })}
                 </h3>
                 <div className="border border-gray-200 rounded-lg overflow-hidden">
                   <table className="w-full">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Fichier</th>
-                        <th className="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Taille</th>
-                        <th className="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Modifié</th>
+                        <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('security.clamav.dbFiles.headers.file')}</th>
+                        <th className="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('security.clamav.dbFiles.headers.size')}</th>
+                        <th className="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('security.clamav.dbFiles.headers.modified')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -192,7 +242,7 @@ export default function SecurityPage() {
                           <td className="px-4 py-2.5 text-sm font-mono text-gray-800">{f.name}</td>
                           <td className="px-4 py-2.5 text-xs text-right text-gray-500 font-mono">{formatBytes(f.size_bytes)}</td>
                           <td className="px-4 py-2.5 text-xs text-right text-gray-400">
-                            {new Date(f.modified_at).toLocaleString("fr-FR")}
+                            {new Date(f.modified_at).toLocaleString(dateLocale)}
                           </td>
                         </tr>
                       ))}
@@ -200,12 +250,12 @@ export default function SecurityPage() {
                   </table>
                 </div>
                 <p className="text-xs text-gray-400 mt-1.5">
-                  Stockés sur le volume hôte — persistants entre les redémarrages.
+                  {t('security.clamav.dbFiles.persistNote')}
                 </p>
               </div>
             )}
 
-            {/* Mise à jour manuelle */}
+            {/* Manual update */}
             <div className="border-t border-gray-100 pt-5">
               {status?.cooldown_until && new Date(status.cooldown_until) > new Date() && (
                 <div className="mb-4 flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
@@ -214,19 +264,18 @@ export default function SecurityPage() {
                       d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                   </svg>
                   <div>
-                    <p className="text-xs font-semibold text-amber-800">Rate limit CDN ClamAV</p>
+                    <p className="text-xs font-semibold text-amber-800">{t('security.clamav.rateLimitTitle')}</p>
                     <p className="text-xs text-amber-700 mt-0.5">
-                      Trop de requêtes récentes. Mise à jour disponible après{" "}
-                      <strong>{new Date(status.cooldown_until).toLocaleTimeString("fr-FR")}</strong>.
+                      {t('security.clamav.rateLimitMessage', { time: new Date(status.cooldown_until).toLocaleTimeString(dateLocale) })}
                     </p>
                   </div>
                 </div>
               )}
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-800">Mise à jour manuelle</h3>
+                  <h3 className="text-sm font-semibold text-gray-800">{t('security.clamav.manualUpdate.title')}</h3>
                   <p className="text-xs text-gray-400 mt-0.5">
-                    La base se met aussi à jour automatiquement toutes les 12h via le daemon.
+                    {t('security.clamav.manualUpdate.description')}
                   </p>
                 </div>
                 <button
@@ -241,7 +290,7 @@ export default function SecurityPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                           d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                       </svg>
-                      Mise à jour...
+                      {t('security.clamav.updating')}
                     </>
                   ) : (
                     <>
@@ -249,7 +298,7 @@ export default function SecurityPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                           d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                       </svg>
-                      Mettre à jour maintenant
+                      {t('security.clamav.updateNow')}
                     </>
                   )}
                 </button>
@@ -258,9 +307,9 @@ export default function SecurityPage() {
               {logs.length > 0 && (
                 <div className="border border-gray-800 rounded-xl bg-gray-900 p-4">
                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-                    Progression
-                    {done && <span className="text-green-400 ml-2">— Terminé</span>}
-                    {running && <span className="text-yellow-400 ml-2">— En cours...</span>}
+                    {t('security.clamav.manualUpdate.progress')}
+                    {done && <span className="text-green-400 ml-2">— {t('import.logDone')}</span>}
+                    {running && <span className="text-yellow-400 ml-2">— {t('import.logRunning')}</span>}
                   </p>
                   <div ref={logsRef} className="max-h-56 overflow-y-auto space-y-0.5">
                     {logs.map((line, i) => <LogLine key={i} line={line} />)}
@@ -272,56 +321,11 @@ export default function SecurityPage() {
         )}
       </div>
 
-      {/* Pipeline de sécurité */}
+      {/* Security pipeline */}
       <div className="bg-white border border-gray-200 rounded-xl p-6">
-        <h2 className="text-sm font-semibold text-gray-800 mb-4">Pipeline de sécurité à l'import</h2>
+        <h2 className="text-sm font-semibold text-gray-800 mb-4">{t('security.pipeline.title')}</h2>
         <div className="space-y-3">
-          {[
-            {
-              step: "1",
-              name: "Format .rpm",
-              desc: "Vérification que le fichier est un paquet RPM valide via rpm -qpi.",
-              color: "bg-blue-100 text-blue-700",
-              blocking: true,
-            },
-            {
-              step: "2",
-              name: "Intégrité SHA-256",
-              desc: "Calcul et stockage du SHA-256 du fichier RPM. Garantit l'intégrité tout au long du cycle de vie.",
-              color: "bg-purple-100 text-purple-700",
-              blocking: true,
-            },
-            {
-              step: "3",
-              name: "Antivirus ClamAV",
-              desc: "Scan complet du binaire RPM contre la base de signatures ClamAV. Détecte les malwares et virus connus.",
-              color: "bg-red-100 text-red-700",
-              blocking: true,
-            },
-            {
-              step: "4",
-              name: "Signature GPG",
-              desc: "Vérification de la signature GPG du paquet RPM si présente. Non bloquant si absente.",
-              color: "bg-yellow-100 text-yellow-700",
-              blocking: false,
-            },
-            {
-              step: "5",
-              name: "Dépendances",
-              desc: "Vérification de la disponibilité des dépendances RPM dans le dépôt interne. Non bloquant — avertissement uniquement.",
-              color: "bg-green-100 text-green-700",
-              blocking: false,
-              enterprise: false,
-            },
-            {
-              step: "6",
-              name: "Analyse CVE — Grype",
-              desc: "Grype scanne le paquet contre les bases CVE/CVSS/NVD et GHSA. Les résultats (score, sévérité, correctif disponible) et la file de révision CISO sont disponibles dans la version Enterprise.",
-              color: "bg-gray-100 text-gray-400",
-              blocking: false,
-              enterprise: true,
-            },
-          ].map((item) => (
+          {pipelineSteps.map((item) => (
             <div key={item.step} className={`flex items-start gap-4 ${item.enterprise ? "opacity-60" : ""}`}>
               <span className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${item.color}`}>
                 {item.enterprise ? (
@@ -336,9 +340,9 @@ export default function SecurityPage() {
                   {item.enterprise ? (
                     <span className="text-xs px-1.5 py-0.5 bg-amber-50 text-amber-600 rounded font-medium border border-amber-200">Enterprise</span>
                   ) : item.blocking ? (
-                    <span className="text-xs px-1.5 py-0.5 bg-red-50 text-red-600 rounded font-medium">Bloquant</span>
+                    <span className="text-xs px-1.5 py-0.5 bg-red-50 text-red-600 rounded font-medium">{t('security.pipeline.blocking')}</span>
                   ) : (
-                    <span className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded font-medium">Avertissement</span>
+                    <span className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded font-medium">{t('security.pipeline.warning')}</span>
                   )}
                 </div>
                 <p className="text-xs text-gray-500 mt-0.5">{item.desc}</p>

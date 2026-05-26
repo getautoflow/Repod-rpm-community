@@ -1,0 +1,910 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "packages": "Packages",
+    "upload": "Upload",
+    "import": "Import",
+    "distributions": "Distributions",
+    "security": "Security",
+    "audit": "Audit",
+    "clientSetup": "Client setup",
+    "downloads": "Downloads",
+    "sbom": "SBOM",
+    "health": "Health",
+    "users": "Users",
+    "sso": "SSO / OIDC",
+    "settings": "Settings",
+    "logout": "Logout",
+    "myAccount": "My account",
+    "sections": {
+      "repo": "Repository",
+      "security": "Security",
+      "clients": "Clients",
+      "admin": "Administration"
+    }
+  },
+  "common": {
+    "loading": "Loading…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "copy": "Copy",
+    "copied": "Copied",
+    "yes": "Yes",
+    "no": "No",
+    "actions": "Actions",
+    "status": "Status",
+    "version": "Version",
+    "date": "Date",
+    "name": "Name",
+    "description": "Description",
+    "active": "Active",
+    "inactive": "Inactive",
+    "error": "Error",
+    "success": "Success",
+    "warning": "Warning",
+    "info": "Info",
+    "refresh": "Refresh",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "submit": "Submit",
+    "reset": "Reset",
+    "enable": "Enable",
+    "disable": "Disable",
+    "connected": "Connected",
+    "language": "Language"
+  },
+  "auth": {
+    "loginTitle": "Sign in to continue",
+    "username": "Username",
+    "password": "Password",
+    "loginButton": "Sign in",
+    "loggingIn": "Signing in…",
+    "forgotPassword": "Forgot password?",
+    "resetPassword": "Reset password",
+    "sendResetLink": "Send link",
+    "sending": "Sending…",
+    "resetSent": "Request sent",
+    "backToLogin": "Back to login",
+    "ssoButton": "Sign in with {{provider}}",
+    "ssoRedirecting": "Redirecting to {{provider}}…",
+    "mfa": {
+      "title": "Two-step verification",
+      "totpLabel": "TOTP code",
+      "verifyButton": "Verify",
+      "verifying": "Verifying…",
+      "backToLogin": "← Back to login"
+    },
+    "errors": {
+      "usernameRequired": "Username is required.",
+      "passwordRequired": "Password is required.",
+      "fillAllFields": "Please fill in all fields.",
+      "invalidCredentials": "Incorrect username or password.",
+      "tooManyAttempts": "Too many attempts. Try again in a few minutes.",
+      "cannotContactServer": "Unable to contact the server. Check your connection.",
+      "serverError": "Server error, please try again.",
+      "userNotFound": "User not found.",
+      "resetFailed": "Reset failed, please try again.",
+      "mfaInvalid": "Invalid or expired TOTP code. Try again.",
+      "mfaCodeRequired": "Enter the 6-digit code from your authenticator app.",
+      "ssoFailed": "Unable to start SSO login. Check the configuration.",
+      "cannotContactServerSimple": "Unable to contact the server."
+    },
+    "forgotSent": "If this account exists and has an email, a reset link has been sent. It is valid for <strong>30 minutes</strong>.",
+    "forgotDescription": "Enter your username. If an email is associated with this account, you will receive a reset link.",
+    "forgotPlaceholder": "Username",
+    "forgotNoEmail": "No email configured? (CLI access)",
+    "cliHint": "From the server:",
+    "mfaScreenTitle": "Two-step verification",
+    "mfaScreenSubtitle": "Enter the 6-digit code from your authenticator app.",
+    "totpCodeLabel": "TOTP code",
+    "verifyButton": "Verify",
+    "verifying": "Verifying…",
+    "backToLogin": "← Back to login",
+    "orSeparator": "or",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password"
+  },
+  "resetPassword": {
+    "title": "New password",
+    "appName": "RPM Repo Manager",
+    "changed": "Password changed!",
+    "canLogin": "You can now sign in with your new password.",
+    "loginButton": "Sign in",
+    "confirmPassword": "Confirm password",
+    "minLength": "8 characters minimum",
+    "saving": "Saving…",
+    "saveButton": "Save password",
+    "backToLogin": "Back to login",
+    "strength": {
+      "uppercase": "Uppercase",
+      "number": "Number",
+      "special": "Special character"
+    },
+    "errors": {
+      "tokenMissing": "Invalid or expired link.",
+      "passwordMismatch": "Passwords do not match.",
+      "tooShort": "Password must be at least 8 characters.",
+      "saveFailed": "Save failed, please try again."
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "refreshedAt": "Refreshed at {{time}}",
+    "loading": "Loading…",
+    "dragHint": "Drag panels to reorganise",
+    "resetLayout": "Reset layout",
+    "refresh": "Refresh",
+    "panels": {
+      "packages": "Packages",
+      "importsToday": "Imports today",
+      "cisoReview": "CISO review",
+      "alerts": "Alerts",
+      "cvePosture": "CVE Posture — Grype",
+      "clamav": "ClamAV — Antivirus",
+      "historyImports": "History — Imports & Failures (30 days)",
+      "historyDecisions": "Imports & Decisions (14d)",
+      "activityWeek": "Activity — last 7 days",
+      "systemAlerts": "System alerts",
+      "recentImports": "Recent activity — imports"
+    },
+    "stats": {
+      "available": "Available",
+      "held": "Held",
+      "quarantine": "Quarantine",
+      "pendingReview": "Pending review"
+    },
+    "chart": {
+      "successfulImports": "Successful imports",
+      "failures": "Failures",
+      "decisions": "Decisions",
+      "imports": "Imports"
+    },
+    "table": {
+      "package": "Package",
+      "version": "Version",
+      "action": "Action",
+      "date": "Date",
+      "status": "Status"
+    },
+    "statusLabels": {
+      "pendingReview": "Pending review",
+      "blocked": "Blocked",
+      "quarantine": "Quarantine",
+      "riskAccepted": "Risk accepted",
+      "exception": "Exception",
+      "upgradeRequired": "Upgrade required"
+    },
+    "noPackagesScanned": "No packages scanned",
+    "noActionRequired": "No action required",
+    "expiring": "Expiring",
+    "expired": "Expired",
+    "noImports": "No imports.",
+    "clamav": {
+      "active": "ACTIVE",
+      "noDaemon": "No daemon",
+      "inactive": "INACTIVE"
+    },
+    "allNominal": "All nominal",
+    "cvePostureAnalysed": "CVE · {{scanned}}/{{total}} analysed",
+    "expiresInDays": "D-{{days}}",
+    "imports7d": "imports / 7d",
+    "failures7d": "failures / 7d",
+    "noHistoricalData": "No historical data yet",
+    "noData": "No data yet",
+    "refreshed": "Dashboard refreshed",
+    "loadError": "Unable to load dashboard",
+    "layoutReset": "Layout reset",
+    "seeMore": "See →",
+    "today": "today",
+    "actionsRequired": "action(s) required",
+    "activeDecisions": "active decision(s)",
+    "toHandle": "to handle"
+  },
+  "packages": {
+    "title": "Available packages",
+    "count_one": "{{count}} package",
+    "count_other": "{{count}} packages",
+    "subtitle": "{{count}} package(s) — accessible via",
+    "syncIndex": "Sync index",
+    "syncing": "Sync…",
+    "searchPlaceholder": "Search a package…",
+    "allDistributions": "All",
+    "loadError": "Unable to load packages",
+    "syncSuccess": "Index synchronised — {{count}} package(s)",
+    "syncError": "Sync failed",
+    "deleteConfirmMsg": "Remove {{name}} from repository?",
+    "deleteSuccess": "{{name}} deleted",
+    "deleteError": "Unable to delete {{name}}",
+    "resolveSuccess": "Dependencies imported — list updated",
+    "resolvePartialError": "Partial import — check logs. Try syncing RPM sources if packages are not found.",
+    "noMatch": "No packages match.",
+    "emptyRepo": "The repository is empty.",
+    "tableHeaders": {
+      "package": "Package",
+      "version": "Version",
+      "distribution": "Distribution",
+      "arch": "Arch",
+      "size": "Size",
+      "status": "Status",
+      "cve": "CVE",
+      "actions": "Actions",
+      "addedOn": "Added on"
+    },
+    "status": {
+      "missingDeps": "{{count}} missing dep(s)",
+      "available": "Available"
+    },
+    "actions": {
+      "inspect": "Inspect",
+      "resolveDeps": "Resolve missing dependencies",
+      "copy": "Copy: {{cmd}}",
+      "download": "Download .rpm",
+      "delete": "Remove from repository"
+    },
+    "copied": "Command copied",
+    "copyError": "Unable to copy",
+    "inspect": {
+      "title": "Package details",
+      "tabs": {
+        "info": "Info",
+        "cve": "CVE",
+        "decision": "CISO Decision",
+        "history": "History",
+        "deps": "Dependencies",
+        "security": "Security",
+        "files": "Files"
+      },
+      "fields": {
+        "name": "Name",
+        "version": "Version",
+        "architecture": "Architecture",
+        "distribution": "Distribution",
+        "size": "Size",
+        "section": "Section",
+        "importedOn": "Imported on",
+        "importedBy": "Imported by",
+        "method": "Method",
+        "sha256": "SHA-256",
+        "addedOn": "Added on",
+        "maintainer": "Maintainer",
+        "priority": "Priority",
+        "homepage": "Homepage",
+        "description": "Description"
+      },
+      "integrity": "Integrity",
+      "allDepsPresent": "All dependencies are present",
+      "missingDeps": "{{count}} missing dependency(ies)",
+      "metadata": "Metadata",
+      "deps": "Dependencies",
+      "noDepsLabel": "None",
+      "depsAvailable": "{{present}}/{{total}} available",
+      "noDepsDecl": "No declared dependencies",
+      "inRepo": "In repository",
+      "missing": "Missing",
+      "validation": "Validation on import",
+      "validationLabels": {
+        "format": "Format .rpm",
+        "provenance": "SHA256 provenance",
+        "antivirus": "ClamAV antivirus",
+        "gpg": "GPG signature",
+        "checksum": "Checksum",
+        "dependencies": "Dependencies"
+      },
+      "noCveDetected": "No CVE detected",
+      "noCveClean": "This package is clean according to Grype",
+      "noDecision": "No CISO decision recorded",
+      "noDecisionHint": "Go to the Security page to process this package",
+      "decisionLabels": {
+        "accept_risk": "Risk accepted",
+        "exception": "Exception",
+        "reject": "Rejected",
+        "upgrade_required": "Upgrade required"
+      },
+      "decisionFields": {
+        "decidedBy": "Decided by",
+        "date": "Date",
+        "expiresAt": "Expires on",
+        "never": "Never",
+        "justification": "Justification"
+      },
+      "sla": {
+        "expired": "Expired — review required",
+        "expiringSoon": "Expires in {{days}} day(s)",
+        "noSla": "No SLA defined",
+        "valid": "Valid — {{days}} day(s) remaining"
+      },
+      "noHistory": "No history available",
+      "byUser": "by",
+      "noDeps": "No dependencies.",
+      "noFiles": "No files.",
+      "noSecurityData": "No security data available."
+    },
+    "resolve": {
+      "title": "Resolve dependencies",
+      "missingCount": "{{count}} missing dependency(ies) in the repository",
+      "missingDesc": "These packages are required by {{name}} but absent from the repository.",
+      "depsToImport": "Dependencies to import",
+      "missingLabel": "Missing",
+      "importButton": "Import automatically ({{count}} package(s))",
+      "importing": "Importing...",
+      "importDone": "Import complete — updating...",
+      "importPartial": "Some packages could not be imported.",
+      "importPartialHint": "If errors indicate 'not found in index', go to Import → Synchronisation and run a full sync.",
+      "close": "Close",
+      "syncHint": "Packages will be downloaded from the synchronised RPM index. If the index is out of date, go to Import → Synchronisation.",
+      "progressLabel": "Progress",
+      "importingDeps": "Importing {{count}} missing dependency(ies)…",
+      "serverError": "Server error",
+      "alreadyPresent": "already present",
+      "imported": "imported",
+      "done": "Done — {{imported}} imported, {{errors}} error(s)",
+      "description": "The following packages are required to resolve dependencies:",
+      "noMissing": "No missing dependencies.",
+      "resolveButton": "Resolve",
+      "resolving": "Resolving…"
+    },
+    "deleteConfirm": "Remove this package from the repository?",
+    "formatDate": "Added on {{date}}",
+    "paginator": {
+      "results_one": "{{count}} result",
+      "results_other": "{{count}} results",
+      "prev": "Prev.",
+      "next": "Next"
+    }
+  },
+  "upload": {
+    "title": "Upload a package",
+    "targetDistribution": "Target distribution",
+    "dropzone": {
+      "idle": "Drag and drop an .rpm file",
+      "or": "or click to select",
+      "unsupported": "Unsupported file type",
+      "drop": "Drop the file here"
+    },
+    "steps": {
+      "receive": "Receiving file",
+      "pipeline": "Validation pipeline",
+      "format": "Format .rpm",
+      "integrity": "SHA-256 integrity",
+      "signature": "GPG signature",
+      "antivirus": "ClamAV antivirus",
+      "cveAnalysis": "CVE analysis",
+      "dependencies": "Dependencies",
+      "pool": "Moving to pool",
+      "manifest": "Generating manifest",
+      "index": "Updating index",
+      "repo": "Adding to RPM repository"
+    },
+    "pipelineRunning": "Pipeline running…",
+    "pipelineDone": "Pipeline complete",
+    "newUpload": "New upload",
+    "distribution": "Distribution:",
+    "subtitle": "The package will be automatically validated before being added to the repository.",
+    "onlyRpmFiles": "Only .rpm files are accepted",
+    "uploadError": "Upload error",
+    "addedToRepo": "{{name}} {{version}} added to the repository",
+    "pendingReviewToast": "{{name}} — pending CISO review",
+    "rejectedToast": "Package rejected",
+    "streamError": "Stream error: {{message}}",
+    "results": {
+      "accepted": "Package accepted",
+      "pendingReview": "Pending review",
+      "rejected": "Package rejected"
+    }
+  },
+  "security": {
+    "title": "Security",
+    "subtitle": "ClamAV antivirus and RPM package validation pipeline.",
+    "clamav": {
+      "title": "Antivirus scanner",
+      "communityNotice": "ClamAV — available in Community edition",
+      "scanDescription": "Open-source antivirus — scans RPM binaries on import",
+      "stats": {
+        "status": "Status",
+        "engineVersion": "Engine version",
+        "dbVersion": "DB version",
+        "dbDate": "DB date"
+      },
+      "dbFiles": {
+        "title": "Signature files ({{count}})",
+        "persistNote": "Stored on the host volume — persistent between restarts.",
+        "headers": {
+          "file": "File",
+          "size": "Size",
+          "modified": "Modified",
+          "version": "Version",
+          "date": "Date"
+        }
+      },
+      "active": "Active",
+      "inactive": "Inactive",
+      "daemonActive": "Daemon active",
+      "daemonStopped": "Daemon stopped",
+      "unavailable": "ClamAV is not available in this container.",
+      "loadError": "Unable to load ClamAV status",
+      "updating": "Updating…",
+      "updateNow": "Update now",
+      "updateDb": "Update DB",
+      "rateLimitCooldown": "Rate limit — retry in {{seconds}}s",
+      "rateLimitTitle": "ClamAV CDN rate limit",
+      "rateLimitMessage": "Too many recent requests. Update available after {{time}}.",
+      "manualUpdate": {
+        "title": "Manual update",
+        "description": "The database also updates automatically every 12h via the daemon.",
+        "progress": "Progress"
+      }
+    },
+    "pipeline": {
+      "title": "Security pipeline on import",
+      "blocking": "Blocking",
+      "warning": "Warning",
+      "steps": {
+        "format": {
+          "name": "Format .rpm",
+          "desc": "Verifies the file is a valid RPM package via rpm -qpi."
+        },
+        "sha256": {
+          "name": "SHA-256 integrity",
+          "desc": "Computes and stores the SHA-256 of the RPM file. Guarantees integrity throughout the lifecycle."
+        },
+        "clamav": {
+          "name": "ClamAV antivirus",
+          "desc": "Full scan of the RPM binary against the ClamAV signature database. Detects known malware and viruses."
+        },
+        "gpg": {
+          "name": "GPG signature",
+          "desc": "Verifies the GPG signature of the RPM package if present. Not blocking if absent."
+        },
+        "deps": {
+          "name": "Dependencies",
+          "desc": "Verifies the availability of RPM dependencies in the internal repository. Not blocking — warning only."
+        },
+        "cve": {
+          "name": "CVE Analysis — Grype",
+          "desc": "Grype scans the package against CVE/CVSS/NVD and GHSA databases. Results (score, severity, available fix) and the CISO review queue are available in the Enterprise edition."
+        }
+      }
+    }
+  },
+  "audit": {
+    "title": "Audit"
+  },
+  "distributions": {
+    "title": "RPM Distributions",
+    "description": "Manage your RPM distributions and associated packages.",
+    "subtitle": "Management of RPM distributions (AlmaLinux, Rocky, CentOS, Oracle, Fedora, openSUSE).",
+    "packageCount_one": "{{count}} package",
+    "packageCount_other": "{{count}} packages",
+    "package_one": "{{count}} package",
+    "package_other": "{{count}} packages",
+    "promotePackage": "Promote a package",
+    "promoting": "Promoting…",
+    "initDists": "Init distributions",
+    "initing": "Init...",
+    "initConfirm": "Initialise createrepo_c directories for the 9 RPM distributions?",
+    "initSuccess": "{{ok}}/{{total}} distributions initialised",
+    "initError": "Initialisation error",
+    "loadError": "Unable to load distributions",
+    "noPackages": "No RPM packages in this distribution.",
+    "packagesIn": "RPM packages in",
+    "tableHeaders": {
+      "package": "Package",
+      "version": "Version",
+      "size": "Size",
+      "addedOn": "Added on"
+    },
+    "modal": {
+      "title": "Promote an RPM package",
+      "subtitle": "Copies a package from one distribution to another",
+      "sourceDistribution": "Source distribution",
+      "rpmPackage": "RPM package",
+      "selectPlaceholder": "-- Select --",
+      "targetDistribution": "Target distribution",
+      "selectPackage": "Select a package",
+      "selectError": "Select a package",
+      "sameDistError": "Source and destination are identical",
+      "promoteError": "Error during promotion",
+      "promote": "Promote",
+      "promoting": "Promoting…",
+      "promoteButton": "Promote →"
+    }
+  },
+  "import": {
+    "title": "Import from the internet",
+    "description": "Search, resolve dependencies and import RPM packages directly into your private repository.",
+    "tabs": {
+      "search": "Search & Import",
+      "batch": "Batch import",
+      "sync": "Synchronisation",
+      "groups": "Import groups"
+    },
+    "logDone": "Done",
+    "logRunning": "Running…",
+    "unknownError": "Unknown error",
+    "serverError": "Server error",
+    "search": {
+      "placeholder": "Search a package to import…",
+      "results_one": "{{count}} result",
+      "results_other": "{{count}} results",
+      "securityBadge": "Security",
+      "securityPatchBadge": "Security patch",
+      "targetDistribution": "Target distribution",
+      "deps": "Dependencies",
+      "import": "Import",
+      "importing": "Importing…",
+      "importRunning": "Import in progress...",
+      "logHeader": "Import log",
+      "noResults": "No results found",
+      "noIndexSynced": "Index not synchronised. Use the Synchronisation tab first.",
+      "searchError": "Error during search",
+      "inRepo": "in repository",
+      "toDownload": "to download",
+      "depsCount": "{{present}}/{{total}} in repository, {{toDownload}} to download",
+      "importPackage": "Importing {{name}}…",
+      "alreadyInRepo": "{{name}} is already in the repository",
+      "importedCount": "{{name}} imported — {{count}} package(s) added",
+      "errorsCount": "{{count}} error(s) during import",
+      "importDone": "Import complete",
+      "importFailed": "Import failed",
+      "resolvingDeps": "Resolving dependencies..."
+    },
+    "batch": {
+      "infoBox": "Enter one package name per line (or comma-separated). Maximum 50 packages per import.",
+      "textareaLabel": "Package list",
+      "atLeastOne": "Enter at least one package name",
+      "max50": "Maximum 50 packages per batch",
+      "importing": "Importing {{count}} package(s)…",
+      "importPackage": "Importing {{name}}…",
+      "alreadyInRepo": "already in repository",
+      "addedCount": "{{count}} package(s) added",
+      "launchImport": "Launch import",
+      "importRunning": "Import in progress...",
+      "detected": "{{count}} package(s) detected",
+      "done": "Done — {{ok}} OK, {{errors}} error(s)",
+      "stats": {
+        "total": "Total",
+        "success": "Success",
+        "failed": "Failed"
+      }
+    },
+    "sync": {
+      "info": "Synchronise your repository with upstream RPM sources.",
+      "allSourcesActive": "All sources are active. The lock icon indicates that the source contains security advisories (CVE/ALSA/RLSA). Click Synchronise all to index packages.",
+      "synchronizeAll": "Synchronise all",
+      "synchronizing": "Synchronising...",
+      "sources": "Sources",
+      "indexedPackages": "Indexed packages",
+      "globalStatus": "Global status",
+      "partial": "Partial",
+      "notSynced": "Not synchronised",
+      "securitySource": "Security source (CVE/critical patches)",
+      "security": "Security",
+      "loadError": "Unable to load synchronisation status",
+      "syncProgress": "Synchronisation progress",
+      "tableHeaders": {
+        "source": "Source",
+        "packages": "Packages",
+        "lastSync": "Last sync",
+        "status": "Status"
+      },
+      "syncButton": "Synchronise",
+      "syncing": "Synchronising…",
+      "status": {
+        "synced": "Synchronised",
+        "error": "Error",
+        "neverSynced": "Never synchronised"
+      }
+    },
+    "groups": {
+      "title": "Import groups",
+      "count": "{{count}} group(s) — each group contains the imported package and all its dependencies.",
+      "deleteConfirm": "Delete group \"{{name}}\" and all its files?",
+      "deleted": "Group \"{{name}}\" deleted",
+      "deleteError": "Unable to delete group",
+      "loadError": "Unable to load groups",
+      "noGroups": "No import groups yet.",
+      "noGroupsHint": "Imported packages will appear here, grouped by main package.",
+      "fileCount": "{{count}} file(s)",
+      "importedOn": "imported on {{date}}",
+      "main": "(main)",
+      "file": "File",
+      "size": "Size",
+      "deleteTitle": "Delete this group"
+    }
+  },
+  "setup": {
+    "title": "Client machine setup",
+    "description": "Configure your machines to use this RPM repository.",
+    "distributionLabel": "Distribution",
+    "tabs": {
+      "dnf": "1. DNF/YUM setup",
+      "zypper": "2. Zypper setup",
+      "network": "3. Network isolation",
+      "autoUpdate": "4. Automatic updates"
+    },
+    "copyButton": "Copy",
+    "copiedButton": "Copied",
+    "copyError": "Copy failed",
+    "fullScript": "Full installation script",
+    "networkAccess": "Network access required",
+    "bestPractices": "Best practices in production",
+    "distributionSelectorLabel": "Target distribution — scripts adapt automatically",
+    "verifyConfig": "Verify configuration",
+    "principle": "Principle",
+    "neverAutoReboot": "Never auto-reboot",
+    "testFirst": "Test first",
+    "monitorLogs": "Monitor logs"
+  },
+  "health": {
+    "title": "System health",
+    "subtitle": "Component status · auto-refresh 30s",
+    "updatedAt": "updated {{time}}",
+    "refreshButton": "Refresh",
+    "loadError": "Unable to load health status.",
+    "status": {
+      "operational": "Operational",
+      "degraded": "Degraded",
+      "error": "Error",
+      "unknown": "Unknown"
+    },
+    "volume": {
+      "freeSpace": "Free space",
+      "totalSpace": "Total space",
+      "diskUsage": "Disk usage",
+      "pool": "Pool volume (.rpm)",
+      "manifests": "Volume Manifests",
+      "audit": "Volume Audit"
+    },
+    "clamavUnavailable": "ClamAV not available — install clamav-daemon to enable antivirus.",
+    "clamavDisabled": "ClamAV not available — antivirus scans will be disabled.",
+    "packages": {
+      "title": "Packages",
+      "manifests": "Manifests",
+      "rpmFiles": ".rpm files",
+      "poolSize": "Pool size"
+    },
+    "scheduler": {
+      "title": "Scheduler (scheduled tasks)",
+      "paused": "Paused",
+      "noTasks": "No scheduled tasks."
+    },
+    "api": {
+      "version": "Version",
+      "timestamp": "Timestamp"
+    },
+    "prometheus": {
+      "title": "Prometheus metrics",
+      "endpointDescription": "Metrics endpoint for Prometheus scraping. Exposes HTTP counters, latencies, packages and vulnerabilities.",
+      "metricsEndpoint": "Endpoint /metrics available for scraping.",
+      "openLink": "Open ↗",
+      "scrapeConfig": "Scrape config",
+      "scrapeConfigTitle": "Configuration prometheus.yml",
+      "metrics": {
+        "httpRequests": "HTTP requests (method, path, status)",
+        "httpLatency": "Request latency (histogram)",
+        "packages": "Packages by distribution and arch",
+        "vulnerabilities": "CVE by severity",
+        "uploads": "Package uploads (success/failure)"
+      },
+      "tableHeaders": {
+        "metric": "Metric",
+        "description": "Description"
+      }
+    }
+  },
+  "downloads": {
+    "title": "Downloads"
+  },
+  "sbom": {
+    "title": "SBOM"
+  },
+  "sso": {
+    "title": "SSO / OIDC"
+  },
+  "users": {
+    "title": "Users",
+    "subtitle": "Account management and API access tokens.",
+    "createButton": "Create a user",
+    "availableRoles": "Available roles",
+    "loading": "Loading...",
+    "noUsers": "No users",
+    "userCount_one": "{{count}} user",
+    "userCount_other": "{{count}} users",
+    "createdAt": "Created on",
+    "toasts": {
+      "createRequired": "Username and password required",
+      "passwordMin": "Password: 8 characters minimum",
+      "created": "User \"{{username}}\" created",
+      "createError": "Error during creation",
+      "updated": "User \"{{username}}\" updated",
+      "updateError": "Error during update",
+      "deleteConfirm": "Permanently delete user \"{{username}}\"?",
+      "deleted": "User \"{{username}}\" deleted",
+      "deleteError": "Unable to delete",
+      "passwordReset": "Password for \"{{username}}\" reset",
+      "passwordMin8": "8 characters minimum",
+      "passwordMismatch": "Passwords do not match",
+      "loadError": "Unable to load users",
+      "tokenNameRequired": "Name required",
+      "tokenCreated": "Token created — copy it now!",
+      "tokenCreateError": "Error during creation",
+      "tokenCopied": "Token copied!",
+      "revokeConfirm": "Revoke token \"{{name}}\"?",
+      "tokenRevoked": "Token \"{{name}}\" revoked",
+      "tokenRevokeError": "Unable to revoke this token",
+      "tokenLoadError": "Unable to load API tokens"
+    },
+    "tokens": {
+      "noTokens": "No API token created.",
+      "noTokensHint": "Create a token to allow your CI/CD pipelines to push packages without a password.",
+      "newToken": "New token",
+      "tokenNamePlaceholder": "Token name *",
+      "role": "Role",
+      "expiresIn": "Expires in (days, empty = never)",
+      "expiresInPlaceholder": "365",
+      "ciTitle": "Usage in a CI/CD pipeline",
+      "copyNow": "Copy this token now — it will not be shown again",
+      "never": "Never",
+      "expired": "Expired",
+      "revokeButton": "Revoke this token",
+      "copyButton": "Copy",
+      "okButton": "OK",
+      "cancelButton": "Cancel",
+      "createButton": "Create",
+      "creatingButton": "Creating…",
+      "createdBy": "Created by",
+      "lastUsed": "Last used",
+      "expiresAt": "Expires on"
+    },
+    "tableHeaders": {
+      "username": "Username",
+      "role": "Role",
+      "origin": "Origin",
+      "status": "Status",
+      "lastLogin": "Last login",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "source": {
+      "ldap": "LDAP account",
+      "local": "Local account"
+    },
+    "actions": {
+      "edit": "Edit",
+      "resetPassword": "Reset password",
+      "resetPasswordLdap": "Password managed by LDAP directory",
+      "delete": "Delete"
+    },
+    "modals": {
+      "create": {
+        "title": "Create a user",
+        "username": "Username",
+        "password": "Password",
+        "role": "Role",
+        "submit": "Create",
+        "creating": "Creating…"
+      },
+      "edit": {
+        "title": "Edit user",
+        "role": "Role",
+        "status": "Status",
+        "submit": "Save",
+        "saving": "Saving…"
+      },
+      "resetPassword": {
+        "title": "Reset password",
+        "newPassword": "New password",
+        "submit": "Reset",
+        "resetting": "Resetting…"
+      },
+      "deleteConfirm": "Delete this user?"
+    },
+    "tokens": {
+      "title": "API tokens",
+      "description": "API tokens for CI/CD pipelines and automated integrations.",
+      "createButton": "Create a token",
+      "tableHeaders": {
+        "name": "Name",
+        "token": "Token",
+        "createdAt": "Created on",
+        "actions": "Actions"
+      },
+      "copyToken": "Copy token",
+      "deleteConfirm": "Delete this token?",
+      "modal": {
+        "title": "Create a token",
+        "name": "Token name",
+        "submit": "Create",
+        "creating": "Creating…"
+      }
+    }
+  },
+  "account": {
+    "title": "My account",
+    "mfa": {
+      "title": "Two-factor authentication (MFA)",
+      "status": {
+        "active": "MFA active",
+        "inactive": "MFA inactive"
+      },
+      "activeDescription": "A TOTP code is required at each login. Compatible with Google Authenticator, Authy, Bitwarden…",
+      "inactiveDescription": "Add a second layer of security — a code from your mobile app will be required at each login.",
+      "enabledDescription": "Your account is now protected by TOTP two-factor authentication.",
+      "disabledDescription": "Two-factor authentication has been removed from your account.",
+      "setup": {
+        "title": "Set up authenticator",
+        "instructions": "Scan this QR code with your authenticator app (Google Authenticator, Authy…)",
+        "manualKey": "Enter the key manually",
+        "confirmInstructions": "Enter the code shown in your app to confirm activation.",
+        "confirmLabel": "Confirmation code",
+        "confirmButton": "Confirm and activate",
+        "confirming": "Activating…",
+        "scannedQr": "I scanned the QR code →",
+        "backToQr": "← Back to QR code"
+      },
+      "disable": {
+        "title": "Disable MFA",
+        "instructions": "Confirmation required. Enter your current TOTP code to disable MFA.",
+        "codeLabel": "TOTP code",
+        "disableButton": "Disable MFA",
+        "disabling": "Disabling…"
+      },
+      "enableButton": "Enable MFA",
+      "disableButton": "Disable MFA",
+      "errors": {
+        "qrFailed": "Error generating QR code.",
+        "sixDigits": "6-digit code required.",
+        "invalidCode": "Invalid code."
+      }
+    }
+  },
+  "oidcCallback": {
+    "loading": "Completing SSO login…",
+    "failed": "SSO authentication failed",
+    "backToLogin": "Back to login",
+    "errors": {
+      "missingParams": "Missing parameters in callback URL.",
+      "invalidState": "Invalid state — possible CSRF attack.",
+      "missingVerifier": "Missing code verifier.",
+      "generic": "SSO authentication error."
+    }
+  },
+  "settings": {
+    "title": "Settings"
+  },
+  "help": {
+    "contextual": "Contextual help",
+    "center": "Help center",
+    "quickStart": "Quick start",
+    "adminGuide": "Administration guide",
+    "apiReference": "API reference",
+    "gpgRotation": "GPG key rotation",
+    "resources": "Resources",
+    "contactSupport": "Contact support",
+    "upgradeToEnterprise": "Upgrade to Enterprise"
+  },
+  "enterprise": {
+    "upgradeTitle": "Unlock more with Repod Enterprise",
+    "upgradeDescription": "This feature is available in the Enterprise edition.",
+    "upgradeButton": "Request a demo",
+    "learnMore": "Learn more",
+    "upgradeBanner": "Unlock CVE/CVSS, SBOM, SSO/OIDC, LDAP, MFA, full audit and more with"
+  },
+  "errors": {
+    "networkError": "Network error, please try again.",
+    "serverError": "Server error, please try again.",
+    "notFound": "Resource not found.",
+    "forbidden": "Access forbidden.",
+    "unknown": "An unknown error occurred."
+  }
+}

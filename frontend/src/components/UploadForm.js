@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import { getApiBaseUrl } from "../api";
 
 // "" quand REACT_APP_API_URL n'est pas défini → URLs relatives → proxiées par nginx
@@ -124,10 +125,11 @@ function WorkflowStep({ step }) {
 }
 
 function ResultBanner({ result }) {
+  const { t } = useTranslation();
   const isAccepted = result.status === "accepted";
   const isPending  = result.status === "pending_review";
   const bg    = isAccepted ? "bg-emerald-50 border-emerald-200" : isPending ? "bg-amber-50 border-amber-200" : "bg-red-50 border-red-200";
-  const title = isAccepted ? "Paquet accepté" : isPending ? "En attente de révision RSSI" : "Paquet rejeté";
+  const title = isAccepted ? t('upload.results.accepted') : isPending ? t('upload.results.pendingReview') : t('upload.results.rejected');
   const color = isAccepted ? "text-emerald-800" : isPending ? "text-amber-800" : "text-red-800";
   const dot   = isAccepted ? "bg-emerald-500" : isPending ? "bg-amber-400" : "bg-red-500";
 
@@ -150,7 +152,7 @@ function ResultBanner({ result }) {
         </div>
       )}
       {result.distribution && (
-        <p className="text-xs text-gray-500">Distribution : <strong className="font-medium">{result.distribution}</strong></p>
+        <p className="text-xs text-gray-500">{t('upload.distribution')} <strong className="font-medium">{result.distribution}</strong></p>
       )}
     </div>
   );
@@ -159,6 +161,7 @@ function ResultBanner({ result }) {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function UploadForm() {
+  const { t } = useTranslation();
   const [distribution, setDistribution] = useState("almalinux8");
   const [uploading, setUploading]       = useState(false);
   const [steps, setSteps]               = useState([]);
@@ -175,7 +178,7 @@ export default function UploadForm() {
   const onDrop = useCallback(async (acceptedFiles) => {
     const file = acceptedFiles[0];
     if (!file) return;
-    if (!file.name.endsWith(".rpm")) { toast.error("Seuls les fichiers .rpm sont acceptés"); return; }
+    if (!file.name.endsWith(".rpm")) { toast.error(t('upload.onlyRpmFiles')); return; }
 
     setUploading(true); setSteps([]); setResult(null); setFileName(file.name);
 
@@ -192,8 +195,8 @@ export default function UploadForm() {
       });
 
       if (!resp.ok) {
-        const err = await resp.json().catch(() => ({ detail: "Erreur serveur" }));
-        toast.error(err.detail || "Erreur lors de l'upload");
+        const err = await resp.json().catch(() => ({ detail: t('errors.serverError') }));
+        toast.error(err.detail || t('upload.uploadError'));
         setUploading(false);
         return;
       }
@@ -224,18 +227,18 @@ export default function UploadForm() {
                 addOrUpdateStep(data);
               } else if (evType === "result") {
                 setResult(data);
-                if (data.status === "accepted")       toast.success(`${data.package} ${data.version} ajouté au dépôt`);
-                else if (data.status === "pending_review") toast(`${data.package} — en attente RSSI`, { icon: "⏳" });
-                else                                  toast.error("Paquet rejeté");
+                if (data.status === "accepted")       toast.success(t('upload.addedToRepo', { name: data.package, version: data.version }));
+                else if (data.status === "pending_review") toast(t('upload.pendingReviewToast', { name: data.package }), { icon: "⏳" });
+                else                                  toast.error(t('upload.rejectedToast'));
               }
             } catch (_) {}
           }
         }
       } catch (streamErr) {
-        toast.error(`Erreur de flux : ${streamErr.message}`);
+        toast.error(t('upload.streamError', { message: streamErr.message }));
       }
     } catch (e) {
-      toast.error(`Erreur réseau : ${e.message}`);
+      toast.error(t('errors.networkError', { message: e.message }));
     } finally {
       setUploading(false);
     }
@@ -248,13 +251,13 @@ export default function UploadForm() {
   return (
     <div className="space-y-6 p-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Upload un paquet</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Le paquet sera validé automatiquement avant d'être ajouté au dépôt</p>
+        <h1 className="text-2xl font-bold text-gray-900">{t('upload.title')}</h1>
+        <p className="text-sm text-gray-500 mt-0.5">{t('upload.subtitle')}</p>
       </div>
 
       {/* Distribution */}
       <div className="bg-white border border-gray-200 rounded-xl p-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Distribution cible</label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">{t('upload.targetDistribution')}</label>
         <div className="flex flex-wrap gap-2">
           {DISTRIBUTIONS.map((d) => (
             <button key={d.codename} type="button" onClick={() => !uploading && setDistribution(d.codename)} disabled={uploading}
@@ -277,12 +280,12 @@ export default function UploadForm() {
           <input {...getInputProps()} />
           <div className="flex flex-col items-center gap-3">
             {isDragReject ? (
-              <><svg className="w-10 h-10 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12"/></svg><p className="text-sm text-red-500 font-medium">Fichier non supporté</p></>
+              <><svg className="w-10 h-10 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12"/></svg><p className="text-sm text-red-500 font-medium">{t('upload.dropzone.unsupported')}</p></>
             ) : isDragActive ? (
-              <><svg className="w-10 h-10 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg><p className="text-sm text-blue-600 font-medium">Déposez le fichier ici</p></>
+              <><svg className="w-10 h-10 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg><p className="text-sm text-blue-600 font-medium">{t('upload.dropzone.drop')}</p></>
             ) : (
               <><svg className="w-10 h-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-              <div><p className="text-sm font-medium text-gray-700">Glissez-déposez un fichier <span className="text-blue-600">.rpm</span></p><p className="text-xs text-gray-400 mt-1">ou cliquez pour sélectionner</p></div></>
+              <div><p className="text-sm font-medium text-gray-700">{t('upload.dropzone.idle')}</p><p className="text-xs text-gray-400 mt-1">{t('upload.dropzone.or')}</p></div></>
             )}
           </div>
         </div>
@@ -297,14 +300,14 @@ export default function UploadForm() {
                 ? <div className="w-3.5 h-3.5 rounded-full border-2 border-blue-500 border-t-transparent animate-spin" />
                 : <div className={`w-3.5 h-3.5 rounded-full ${result?.status === "accepted" ? "bg-emerald-500" : result?.status === "rejected" || result?.status === "error" ? "bg-red-500" : "bg-amber-400"}`} />}
               <div>
-                <p className="text-sm font-semibold text-gray-800">{uploading ? "Pipeline en cours…" : "Pipeline terminé"}</p>
+                <p className="text-sm font-semibold text-gray-800">{uploading ? t('upload.pipelineRunning') : t('upload.pipelineDone')}</p>
                 {fileName && <p className="text-xs text-gray-400 font-mono mt-0.5">{fileName}</p>}
               </div>
             </div>
             {!uploading && (
               <button onClick={() => { setSteps([]); setResult(null); setFileName(null); }}
                 className="text-xs text-gray-400 hover:text-gray-600 border border-gray-200 rounded-lg px-3 py-1.5 transition-colors">
-                Nouvel upload
+                {t('upload.newUpload')}
               </button>
             )}
           </div>

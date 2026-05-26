@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import toast from "react-hot-toast";
 import {
   getDistributions, getDistribPackages,
@@ -18,6 +19,7 @@ const DISTRO_META = {
 };
 
 function DistribCard({ distrib, onSelect, selected }) {
+  const { t } = useTranslation();
   const meta = DISTRO_META[distrib.codename] || {
     color: "bg-gray-50 border-gray-200",
     badge: "bg-gray-100 text-gray-700",
@@ -45,14 +47,15 @@ function DistribCard({ distrib, onSelect, selected }) {
       <p className="font-bold text-gray-900 text-sm">{meta.label}</p>
       <p className="text-xs text-gray-500 font-mono mt-0.5">{distrib.codename}</p>
       <p className="text-2xl font-bold text-gray-800 mt-3">{distrib.package_count}</p>
-      <p className="text-xs text-gray-400">paquet(s)</p>
+      <p className="text-xs text-gray-400">{t('distributions.package_other', { count: distrib.package_count })}</p>
     </button>
   );
 }
 
-// ─── Panneau promotion ────────────────────────────────────────────────────────
+// ─── Promote panel ────────────────────────────────────────────────────────────
 
 function PromotePanel({ distribs, onClose, onDone }) {
+  const { t } = useTranslation();
   const [pkg, setPkg] = useState("");
   const [fromDist, setFromDist] = useState(distribs[0]?.codename || "almalinux8");
   const [toDist, setToDist] = useState(distribs[1]?.codename || "rocky8");
@@ -70,15 +73,15 @@ function PromotePanel({ distribs, onClose, onDone }) {
   }, [fromDist]);
 
   const handlePromote = async () => {
-    if (!pkg) { toast.error("Sélectionnez un paquet"); return; }
-    if (fromDist === toDist) { toast.error("Source et destination identiques"); return; }
+    if (!pkg) { toast.error(t('distributions.modal.selectError')); return; }
+    if (fromDist === toDist) { toast.error(t('distributions.modal.sameDistError')); return; }
     setLoading(true);
     try {
       const res = await promotePackage(pkg, fromDist, toDist);
       toast.success(res.message);
       onDone();
     } catch (err) {
-      toast.error(err.response?.data?.detail || "Erreur lors de la promotion");
+      toast.error(err.response?.data?.detail || t('distributions.modal.promoteError'));
     } finally {
       setLoading(false);
     }
@@ -93,8 +96,8 @@ function PromotePanel({ distribs, onClose, onDone }) {
         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
           <div className="flex items-center justify-between p-6 border-b border-gray-100">
             <div>
-              <h2 className="font-bold text-gray-900">Promouvoir un paquet RPM</h2>
-              <p className="text-xs text-gray-500 mt-0.5">Copie un paquet d'une distribution vers une autre</p>
+              <h2 className="font-bold text-gray-900">{t('distributions.modal.title')}</h2>
+              <p className="text-xs text-gray-500 mt-0.5">{t('distributions.modal.subtitle')}</p>
             </div>
             <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -104,26 +107,26 @@ function PromotePanel({ distribs, onClose, onDone }) {
           </div>
           <div className="p-6 space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Distribution source</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('distributions.modal.sourceDistribution')}</label>
               <select value={fromDist} onChange={(e) => { setFromDist(e.target.value); setPkg(""); }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 {codenames.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Paquet RPM</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('distributions.modal.rpmPackage')}</label>
               {loadingPkgs ? (
-                <p className="text-xs text-gray-400 italic">Chargement...</p>
+                <p className="text-xs text-gray-400 italic">{t('common.loading')}</p>
               ) : (
                 <select value={pkg} onChange={(e) => setPkg(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option value="">-- Sélectionner --</option>
+                  <option value="">{t('distributions.modal.selectPlaceholder')}</option>
                   {packages.map((p) => <option key={p.name} value={p.name}>{p.name} ({p.version})</option>)}
                 </select>
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Distribution destination</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('distributions.modal.targetDistribution')}</label>
               <select value={toDist} onChange={(e) => setToDist(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 {codenames.filter((c) => c !== fromDist).map((c) => <option key={c} value={c}>{c}</option>)}
@@ -141,7 +144,7 @@ function PromotePanel({ distribs, onClose, onDone }) {
               disabled={loading || !pkg}
               className="w-full py-3 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors"
             >
-              {loading ? "Promotion en cours..." : "Promouvoir"}
+              {loading ? t('distributions.modal.promoting') : t('distributions.modal.promote')}
             </button>
           </div>
         </div>
@@ -150,9 +153,10 @@ function PromotePanel({ distribs, onClose, onDone }) {
   );
 }
 
-// ─── Page principale ──────────────────────────────────────────────────────────
+// ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function DistributionsPage() {
+  const { t } = useTranslation();
   const [distribs, setDistribs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDist, setSelectedDist] = useState(null);
@@ -160,7 +164,6 @@ export default function DistributionsPage() {
   const [loadingPkgs, setLoadingPkgs] = useState(false);
   const [showPromote, setShowPromote] = useState(false);
   const [initing, setIniting] = useState(false);
-  // Protège contre les double-appels à auto-init sur le même montage
   const autoInitDone = useRef(false);
 
   useEffect(() => { load(); }, []); // eslint-disable-line
@@ -180,36 +183,34 @@ export default function DistributionsPage() {
       const data = await getDistributions();
       const dists = data.distributions || [];
       setDistribs(dists);
-      // Auto-init silencieux : si toutes les distributions n'ont aucun paquet,
-      // createrepo_c n'a probablement pas encore été initialisé.
       if (!autoInitDone.current && dists.length > 0 && dists.every((d) => d.package_count === 0)) {
         autoInitDone.current = true;
         initDistributions().then(() => load()).catch(() => {});
       }
     } catch {
-      toast.error("Impossible de charger les distributions");
+      toast.error(t('distributions.loadError'));
     } finally {
       setLoading(false);
     }
   };
 
   const handleInit = async () => {
-    if (!window.confirm("Initialiser les répertoires createrepo_c pour les 9 distributions RPM ?")) return;
+    if (!window.confirm(t('distributions.initConfirm'))) return;
     setIniting(true);
     try {
       const res = await initDistributions();
       const ok = res.results.filter((r) => r.ok).length;
-      toast.success(`${ok}/${res.results.length} distributions initialisées`);
+      toast.success(t('distributions.initSuccess', { ok, total: res.results.length }));
       load();
     } catch (err) {
-      toast.error(err.response?.data?.detail || "Erreur d'initialisation");
+      toast.error(err.response?.data?.detail || t('distributions.initError'));
     } finally {
       setIniting(false);
     }
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64 text-gray-400 text-sm">Chargement...</div>;
+    return <div className="flex items-center justify-center h-64 text-gray-400 text-sm">{t('common.loading')}</div>;
   }
 
   return (
@@ -222,12 +223,12 @@ export default function DistributionsPage() {
         />
       )}
 
-      {/* En-tête */}
+      {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Distributions RPM</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('distributions.title')}</h1>
           <p className="text-sm text-gray-500 mt-1">
-            Gestion des 9 distributions RPM (AlmaLinux, Rocky, CentOS, Oracle, Fedora, openSUSE).
+            {t('distributions.subtitle')}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -235,12 +236,11 @@ export default function DistributionsPage() {
             onClick={handleInit}
             disabled={initing}
             className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 transition-colors"
-            title="Initialise les répertoires createrepo_c pour les distributions"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
             </svg>
-            {initing ? "Init..." : "Init distributions"}
+            {initing ? t('distributions.initing') : t('distributions.initDists')}
           </button>
           <button
             onClick={() => setShowPromote(true)}
@@ -249,12 +249,12 @@ export default function DistributionsPage() {
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
             </svg>
-            Promouvoir un paquet
+            {t('distributions.promotePackage')}
           </button>
         </div>
       </div>
 
-      {/* Cartes distributions */}
+      {/* Distribution cards */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {distribs.map((d) => (
           <DistribCard
@@ -266,16 +266,16 @@ export default function DistributionsPage() {
         ))}
       </div>
 
-      {/* Liste des paquets de la distribution sélectionnée */}
+      {/* Package list for selected distribution */}
       {selectedDist && (
         <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
             <div className="flex items-center gap-3">
               <h2 className="text-sm font-semibold text-gray-800">
-                Paquets RPM dans <span className="font-mono text-blue-600">{selectedDist}</span>
+                {t('distributions.packagesIn')} <span className="font-mono text-blue-600">{selectedDist}</span>
               </h2>
               <span className="px-2 py-0.5 bg-gray-100 rounded text-xs text-gray-600">
-                {loadingPkgs ? "…" : `${distPackages.length} paquet(s)`}
+                {loadingPkgs ? "…" : t('distributions.package_other', { count: distPackages.length })}
               </span>
             </div>
             <button onClick={() => setSelectedDist(null)}
@@ -286,10 +286,10 @@ export default function DistributionsPage() {
             </button>
           </div>
           {loadingPkgs ? (
-            <div className="p-8 text-center text-gray-400 text-sm">Chargement...</div>
+            <div className="p-8 text-center text-gray-400 text-sm">{t('common.loading')}</div>
           ) : distPackages.length === 0 ? (
             <div className="p-8 text-center text-gray-400 text-sm">
-              Aucun paquet RPM dans cette distribution.
+              {t('distributions.noPackages')}
             </div>
           ) : (
             <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
@@ -304,7 +304,7 @@ export default function DistributionsPage() {
                     onClick={() => setShowPromote(true)}
                     className="text-xs text-blue-600 hover:text-blue-800 font-medium"
                   >
-                    Promouvoir →
+                    {t('distributions.modal.promoteButton')}
                   </button>
                 </div>
               ))}

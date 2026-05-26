@@ -1,23 +1,25 @@
 /**
- * OidcCallbackPage — Page de callback OIDC
+ * OidcCallbackPage — OIDC callback page
  *
- * L'IdP (Keycloak, Authentik, Azure AD…) redirige ici après authentification :
+ * The IdP (Keycloak, Authentik, Azure AD…) redirects here after authentication:
  *   /oidc-callback?code=<code>&state=<state>[&error=<err>]
  *
- * Flow :
- *   1. Lire code + state depuis l'URL
- *   2. Vérifier state contre sessionStorage (anti-CSRF)
- *   3. Récupérer code_verifier depuis sessionStorage (PKCE)
+ * Flow:
+ *   1. Read code + state from URL
+ *   2. Verify state against sessionStorage (anti-CSRF)
+ *   3. Retrieve code_verifier from sessionStorage (PKCE)
  *   4. POST /api/v1/auth/oidc/callback → JWT repod-rpm
  *   5. signIn() + navigate("/")
  */
 
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { oidcCallback } from "../api";
 import { useAuth } from "../context/AuthContext";
 
 export default function OidcCallbackPage() {
+  const { t } = useTranslation();
   const [searchParams]      = useSearchParams();
   const [status, setStatus] = useState("loading"); // loading | error
   const [errorMsg, setErrorMsg] = useState("");
@@ -26,7 +28,7 @@ export default function OidcCallbackPage() {
 
   useEffect(() => {
     const run = async () => {
-      // ── 1. Lire les paramètres reçus de l'IdP ───────────────────────────────
+      // 1. Read parameters received from IdP
       const code       = searchParams.get("code");
       const stateParam = searchParams.get("state");
       const errorParam = searchParams.get("error");
@@ -39,40 +41,40 @@ export default function OidcCallbackPage() {
       }
 
       if (!code || !stateParam) {
-        setErrorMsg("Paramètres de callback manquants (code ou state absent).");
+        setErrorMsg(t('oidcCallback.errors.missingParams'));
         setStatus("error");
         return;
       }
 
-      // ── 2. Vérifier le state (anti-CSRF) ────────────────────────────────────
+      // 2. Verify state (anti-CSRF)
       const storedState  = sessionStorage.getItem("oidc_state");
       const codeVerifier = sessionStorage.getItem("oidc_code_verifier");
       const redirectUri  = sessionStorage.getItem("oidc_redirect_uri") || "";
 
       if (!storedState || storedState !== stateParam) {
-        setErrorMsg("State invalide — possible attaque CSRF. Veuillez réessayer.");
+        setErrorMsg(t('oidcCallback.errors.invalidState'));
         setStatus("error");
         return;
       }
 
       if (!codeVerifier) {
-        setErrorMsg("Code verifier manquant en session. Veuillez réessayer.");
+        setErrorMsg(t('oidcCallback.errors.missingVerifier'));
         setStatus("error");
         return;
       }
 
-      // ── 3. Nettoyer sessionStorage ───────────────────────────────────────────
+      // 3. Clean sessionStorage
       sessionStorage.removeItem("oidc_state");
       sessionStorage.removeItem("oidc_code_verifier");
       sessionStorage.removeItem("oidc_redirect_uri");
 
-      // ── 4. Échanger le code contre un JWT repod-rpm ──────────────────────────
+      // 4. Exchange code for JWT
       try {
         const data = await oidcCallback(code, stateParam, codeVerifier, redirectUri);
         signIn(data.access_token);
         navigate("/", { replace: true });
       } catch (err) {
-        const detail = err?.response?.data?.detail || "Authentification SSO échouée.";
+        const detail = err?.response?.data?.detail || t('oidcCallback.errors.generic');
         setErrorMsg(detail);
         setStatus("error");
       }
@@ -88,7 +90,7 @@ export default function OidcCallbackPage() {
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
         </svg>
-        <p className="text-slate-300 text-sm">Finalisation de la connexion SSO…</p>
+        <p className="text-slate-300 text-sm">{t('oidcCallback.loading')}</p>
       </div>
     );
   }
@@ -102,13 +104,13 @@ export default function OidcCallbackPage() {
               d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
           </svg>
         </div>
-        <h2 className="text-lg font-bold text-gray-900">Échec de l'authentification SSO</h2>
+        <h2 className="text-lg font-bold text-gray-900">{t('oidcCallback.failed')}</h2>
         <p className="text-sm text-gray-600">{errorMsg}</p>
         <button
           onClick={() => navigate("/login", { replace: true })}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg text-sm transition-colors"
         >
-          Retour à la connexion
+          {t('oidcCallback.backToLogin')}
         </button>
       </div>
     </div>
